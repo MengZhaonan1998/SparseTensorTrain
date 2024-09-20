@@ -2,8 +2,15 @@ import numpy as np
 import tensorly as tl
 import utils as ut
 
-# For CP decomposition
+import scipy
+
+import sparse 
+import tensorly.contrib.sparse as stl
+
+from tensorly.contrib.sparse.cp_tensor import cp_to_tensor
 from tensorly.decomposition import parafac
+from tensorly.contrib.sparse.decomposition import parafac as sparse_parafac # The sparse version
+
 
 # Display
 def PrintBunchInfo(Bunch):
@@ -17,11 +24,12 @@ def PrintBunchInfo(Bunch):
     return 
 
 # Load some data built in tensorly
-IL2 = tl.datasets.load_IL2data()
-C19 = tl.datasets.load_covid19_serology()
-KIN = tl.datasets.load_kinetic()
-TensorBunchList = [C19, KIN] # there are some problems with IL2 dataset I think
+#IL2 = tl.datasets.load_IL2data()
+#C19 = tl.datasets.load_covid19_serology()
+#KIN = tl.datasets.load_kinetic()
+#TensorBunchList = [C19, KIN] # there are some problems with IL2 dataset I think
 
+'''
 for Data in TensorBunchList:
     # Load and display data
     PrintBunchInfo(Data)
@@ -48,10 +56,30 @@ for Data in TensorBunchList:
     normError_nosparse = ut.NormError(X, reconT_nosparse, 2)
     normError_sparse = ut.NormError(X, reconT_sparse, 2)
     print(f"normError_nosparse / normError_sparse = {normError_nosparse} / {normError_sparse}")
+'''
 
-    
-        
-    
+#T = sparse.random((10, 11, 12))
+#dense_cp = parafac(T, 5, init = "random")
+#sparse_cp = sparse_parafac(T, 10, init = "random")
+#T_ = cp_to_tensor((sparse_cp.weights, sparse_cp.factors))
+#print(tl.norm(T_-T)/tl.norm(T))
+
+
+shape = (1001, 1002, 1003)
+rank  = 5
+starting_weights = stl.ones((rank))
+starting_factors = [sparse.random((i, rank)) for i in shape]
+
+tensor = cp_to_tensor((starting_weights, starting_factors))
+
+#dense_cp = parafac(tensor, 5, init = "random")
+sparse_cp = sparse_parafac(tensor, 20, init = "random")
+T_ = cp_to_tensor((sparse_cp.weights, sparse_cp.factors))
+print(tl.norm(T_-tensor)/tl.norm(tensor))
+
+
+
+pass
 
 
 

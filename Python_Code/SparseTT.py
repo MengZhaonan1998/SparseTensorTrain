@@ -128,15 +128,29 @@ def legacy4():
     xx = tl.tt_to_tensor(factorList)
     tt = tl.decomposition.tensor_train(xx, rank)
 
-shape = (5, 6, 10, 7)
-density = 1e0
+shape = (30, 30, 30, 30)
+density = 1e-4 
 rvs = lambda x: sc.stats.poisson(25, loc=10).rvs(x, random_state=np.random.RandomState(1))
 T_COO = sp.random(shape, density=density, random_state=2, data_rvs=rvs)
 T_NP = T_COO.todense()
+print(f"The total size of the input tensor is {T_NP.size}")
+print(f"The number of non-zeros of the input tensor is {np.count_nonzero(T_NP != 0)}")
 
-rank = (1, 4, 4, 4, 1)
+rank = (1, 30, 30, 30, 1)
 factors_NP = tl.decomposition.tensor_train(T_NP, rank)
-RecT_NP = tl.tt_to_tensor(factors_NP)
+ihy
+total_size_factor = 0
+total_nz_factor = 0
+for f in factors_NP:
+    total_size_factor += f.size  
+    total_nz_factor += np.count_nonzero(f != 0)  
+print(f"The total size of TT factors is {total_size_factor}")
+print(f"The number of non-zeros of the input tensor is {total_nz_factor}")
+
+RecT_NP = tl.tt_to_tensor(factors_NP) 
 print(tl.norm(RecT_NP - T_NP, 2) / tl.norm(T_NP, 2))
+
+
+
 
 pass
