@@ -78,7 +78,6 @@ T_ = cp_to_tensor((sparse_cp.weights, sparse_cp.factors))
 print(tl.norm(T_-tensor)/tl.norm(tensor))
 
 
-
 pass
 
 
