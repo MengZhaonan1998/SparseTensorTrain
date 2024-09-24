@@ -5,7 +5,20 @@ import random as rd
 from tensorly.contrib.decomposition import tensor_train_cross
 from tensorly.decomposition import tensor_train
 
-def TT_Cross():
+def TT_Cross(T: tl.tensor, tol: float, iter_max: int):
+    shape_T = T.shape   # Shape of the input tensor
+    dim = len(shape_T)  # Number of dimensions(orders)
+    iter = 0            # Number of iterations
+    while iter < iter_max:
+        iter += 1
+        for k in range(dim):
+            #TODO...
+            pass
+        for k in reversed(range(dim)):
+            #TODO...
+            pass
+    
+    
     
     return
 
@@ -36,9 +49,9 @@ def SparseInfo(factors: list[np.array]):
         print(f"Reconstruction tensor: count of zero = {cntzero}, size = {size}, sparsity = {sparsity}, density = {density}")
     return
 
-rank = [1, 5, 5, 1]
-order = [10, 10, 10]
-sparsity = [0.8, 0.8, 0.8]
+rank = [1, 10, 10, 1]
+order = [20, 20, 20]
+sparsity = [0.90, 0.90, 0.90]
 factors = []
 for i in range(len(order)):
     N = rank[i] * order[i] * rank[i+1]
