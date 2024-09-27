@@ -5,6 +5,7 @@ import random as rd
 from tensorly.contrib.decomposition import tensor_train_cross
 from tensorly.decomposition import tensor_train
 
+
 def TT_Cross(T: tl.tensor, tol: float, iter_max: int):
     shape_T = T.shape   # Shape of the input tensor
     dim = len(shape_T)  # Number of dimensions(orders)
