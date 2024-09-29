@@ -2,7 +2,7 @@ import numpy as np
 import tensorly as tl
 import sparse as sp
 import scipy as sc
-from TTCrossAlgo import tensor_train_cross
+from SparseTTCross import sparse_ttcross
 
 def SparseInfo(factors: list[np.array]):
     avgsparsity = 0
@@ -52,27 +52,21 @@ def testCase1():
     SpT = tl.tt_to_tensor(factors)            # Tensorly supports sparse backends
     print(f"The density of the synthetic sparse tensor SpT is {SpT.density}. The number of non-zeros is {SpT.nnz}")
 
-    # Temporarily convert sparse SpT into densor format, 
-    # as ttcross api so far does not support sparse format
-    SpTd = SpT.todense()
-
     # TT Cross 
     random_state = 1
     tol = 1e-10
     maxiter = 500
-    spFactors = tensor_train_cross(SpTd, rank, tol, maxiter, random_state)    
-
-    # Hard thresholding. Is this step necessary?
-    for i in range(len(spFactors)):
-        spFactors[i][np.abs(spFactors[i])<1e-10]=0.0
+    spFactors = sparse_ttcross(SpT, rank, tol, maxiter, random_state)    
 
     # Check the reconstruction error
     reconT = tl.tt_to_tensor(spFactors)
-    error = tl.norm(reconT - SpTd, 2) / tl.norm(SpTd, 2)
+    error = tl.norm(reconT - SpT, 2) / tl.norm(SpT, 2)
     print(f"The reconstruction error is {error}")
 
     # Check the sparsity of the tensor train
-    SparseInfo(spFactors)
+    for i in range(len(spFactors)):
+        print(f"Factor {i}: nnz = {spFactors[i].nnz}, density = {spFactors[i].density}, sparsity = {1-spFactors[i].density}")
+        
 
 def testCase2():
     '''
@@ -95,27 +89,21 @@ def testCase2():
     SpT = tl.tt_to_tensor(factors)            # Tensorly supports sparse backends
     print(f"The density of the synthetic sparse tensor SpT is {SpT.density}. The number of non-zeros is {SpT.nnz}")
 
-    # Temporarily convert sparse SpT into densor format, 
-    # as ttcross api so far does not support sparse format
-    SpTd = SpT.todense()
-
     # TT Cross 
     random_state = 1
     tol = 1e-10
     maxiter = 500
-    spFactors = tensor_train_cross(SpTd, rank, tol, maxiter, random_state)    
-
-    # Hard thresholding. Is this step necessary?
-    for i in range(len(spFactors)):
-        spFactors[i][np.abs(spFactors[i])<1e-10]=0.0
+    spFactors = sparse_ttcross(SpT, rank, tol, maxiter, random_state)    
 
     # Check the reconstruction error
     reconT = tl.tt_to_tensor(spFactors)
-    error = tl.norm(reconT - SpTd, 2) / tl.norm(SpTd, 2)
+    error = tl.norm(reconT - SpT, 2) / tl.norm(SpT, 2)
     print(f"The reconstruction error is {error}")
 
     # Check the sparsity of the tensor train
-    SparseInfo(spFactors)
+    for i in range(len(spFactors)):
+        print(f"Factor {i}: nnz = {spFactors[i].nnz}, density = {spFactors[i].density}, sparsity = {1-spFactors[i].density}")
+  
     
 def testCase3():
     '''
@@ -138,28 +126,26 @@ def testCase3():
     SpT = tl.tt_to_tensor(factors)            # Tensorly supports sparse backends
     print(f"The density of the synthetic sparse tensor SpT is {SpT.density}. The number of non-zeros is {SpT.nnz}")
 
-    # Temporarily convert sparse SpT into densor format, 
-    # as ttcross api so far does not support sparse format
-    SpTd = SpT.todense()
-
     # TT Cross 
     random_state = 100
     tol = 1e-10
     maxiter = 500
-    spFactors = tensor_train_cross(SpTd, rank, tol, maxiter, random_state)    
-
-    # Hard thresholding. Is this step necessary?
-    for i in range(len(spFactors)):
-        spFactors[i][np.abs(spFactors[i])<1e-10]=0.0
-
+    spFactors = sparse_ttcross(SpT, rank, tol, maxiter, random_state)    
+    
     # Check the reconstruction error
     reconT = tl.tt_to_tensor(spFactors)
-    error = tl.norm(reconT - SpTd, 2) / tl.norm(SpTd, 2)
+    error = tl.norm(reconT - SpT, 2) / tl.norm(SpT, 2)
     print(f"The reconstruction error is {error}")
 
     # Check the sparsity of the tensor train
-    SparseInfo(spFactors)
+    for i in range(len(spFactors)):
+        print(f"Factor {i}: nnz = {spFactors[i].nnz}, density = {spFactors[i].density}, sparsity = {1-spFactors[i].density}")
+  
 
-testCase1()
-testCase2()
+
+#testCase1()
+#testCase2()
 testCase3()
+
+# NOTE:
+# control variable: Dimension, shape...?
