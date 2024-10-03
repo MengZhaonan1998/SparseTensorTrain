@@ -3,6 +3,15 @@ import numpy.linalg as la
 import tensorly as tl
 import tensorly.tenalg.proximal as prox
 
+#import julia
+#julia.install()
+#from julia.api import Julia
+#jl=Julia(compiled_modules=False)
+#from julia import ITensorTCI
+#ii = ITensorTCI.interpolative
+#M = [[1,2],[3,4]]
+#ii(M,1)
+
 
 def TTSVD(tensorX: tl.tensor, r_max: float, eps: float) -> list[tl.tensor]:
     shape = tensorX.shape  # Get the shape of input tensor: [n1, n2, ..., nd]
