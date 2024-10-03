@@ -142,7 +142,6 @@ def testCase3():
         print(f"Factor {i}: nnz = {spFactors[i].nnz}, density = {spFactors[i].density}, sparsity = {1-spFactors[i].density}")
   
 
-
 #testCase1()
 #testCase2()
 testCase3()
