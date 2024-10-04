@@ -13,22 +13,19 @@ import tensorly.tenalg.proximal as prox
 #ii(M,1)
 
 
-def TTSVD(tensorX: tl.tensor, r_max: float, eps: float) -> list[tl.tensor]:
+def TTSVD(tensorX: tl.tensor, r_max: int, eps: float) -> list[tl.tensor]:
     shape = tensorX.shape  # Get the shape of input tensor: [n1, n2, ..., nd]
     dim = len(shape)       # Get the number of dimension
     delta = (eps / np.sqrt(dim - 1)) * tl.norm(tensorX, 2)  # Truncation parameter
     W = tensorX  # Copy tensor X -> W
     nbar = W.size   # Total size of W
-    
     r = 1              # Rank r
     ttList = []        # list storing tt factors
     iterlist = list(range(1, dim))  # Create iteration list: 1, 2, ..., d-1
     iterlist.reverse()              # Reverse the iteration list: d-1, ..., 1 
-    
     for i in iterlist:
         W = tl.reshape(W, [int(nbar / r / shape[i]), int(r * shape[i])])  # Reshape W
         U, S, Vh = la.svd(W)  # SVD of W matrix
-
         # Compute rank r
         s = 0
         j = S.size 
@@ -37,17 +34,30 @@ def TTSVD(tensorX: tl.tensor, r_max: float, eps: float) -> list[tl.tensor]:
             s += S[j] * S[j]
         j += 1
         ri = min(j, r_max)  # r_i-1 = min(r_max, r_delta_i)
-
         Ti = tl.reshape(Vh[0:ri, :], [ri, shape[i], r])
         nbar = int(nbar * ri / shape[i] / r)  # New total size of W
         r = ri  # Renewal r
         W = U[:, 0:ri] @ np.diag(S[0:ri])  # W = U[..] * S[..]
-        
         ttList.append(Ti)  # Append new factor
-          
     T1 = tl.reshape(W, [1, shape[0], r])
     ttList.append(T1)    
     return ttList
+
+I = 3
+J = 4
+K = 5
+T = np.zeros([I,J,K])
+for i in range(I):
+    for j in range(J):
+        for k in range(K):
+            T[i,j,k] = i+j+k
+print(T)
+factors = TTSVD(T, 5, 1e-4)
+factors.reverse()
+reconT = tl.tt_to_tensor(factors)
+print(tl.norm(T-reconT, 2)/tl.norm(T, 2))
+
+pass
 
 '''
 rng = tl.check_random_state(10)  # Fix the random seed for reproducibility
@@ -61,16 +71,7 @@ error = tl.norm(tensorX - reconX, 2)/tl.norm(tensorX, 2)
 print(error)
 '''
 
-shape = [50, 50, 50, 50]
-rank = [1, 4, 4, 4, 1]
-dense_factors = tl.random.random_tt(shape, rank, False, 0)  # Factor initialization
 
-sparse_factors = []
-for i in range(len(shape)):
-    dense_factor = dense_factors[i]
-    sparse_factor = prox.proximal_operator(dense_factor, normalized_sparsity=50)  # Sparsity introduction
-    sparse_factors.append(sparse_factor)
 
-U, S, Vh = np.linalg.svd(sparse_factors[0])
 
-pass
+
