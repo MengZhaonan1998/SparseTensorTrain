@@ -1,4 +1,4 @@
-using LinearAlgebra: norm
+using LinearAlgebra
 using Printf
 using ITensorTCI: interpolative
 using ITensors
@@ -11,19 +11,79 @@ end
 function TTSVD(T::ITensor, r_max::Int64, eps::Float64)
   idx = size(T)    # shape(index) of the input ITensor T
   dim = order(T)   # dimension number
+  delta = (eps / sqrt(dim - 1)) * norm(T)  # Truncation parameter
   nbar = 1         # total size of T = i_x * i_y * i_z...
   for i in 1:dim
     nbar *= idx[i]
   end
-
-  W = T  # copy tensor T -> W
-  r = 1  # rank
-  delta = (eps / sqrt(dim - 1)) * norm(T)    
-    
+  r = 1         # rank
+  W = array(T)  # copy tensor T -> W
+  factors = []
   for i in dim:-1:2
-      
-       
+    reshapeR = Int(nbar / r / idx[i])
+    reshapeC = Int(r * idx[i])
+    W = reshape(W, (reshapeR, reshapeC)) # reshape   
+    #@show W
+    U, S, V = svd(W)   # Singular value decomposition of W
+    Vh = transpose(V)  # Transpose V -> V^T
+    # Compute rank r
+    s = 0
+    j = length(S)
+    while s <= delta * delta
+      s += S[j] * S[j]
+      j -= 1
+    end
+    j += 1
+    ri = min(j, r_max)
+    vv = Vh[1:ri, :]
+    Ti = reshape(vv, (ri, idx[i], r))
+    nbar = Int(nbar * ri / idx[i] / r)
+    r = ri
+    W = U[:, 1:ri] * Diagonal(S[1:ri])
+    #@show W
+    pushfirst!(factors, Ti)
   end
+  Ti = reshape(W, (1, idx[1], r))
+  pushfirst!(factors, Ti)
+  return factors
+end
+
+function TTContraction(factors, Indices)
+  iTlist = []
+  facStart = factors[1]
+  idxres = size(facStart)
+  P = Indices[1]
+  B = Index(idxres[3], "B")
+  iTStart = ITensor(facStart, P, B)
+  push!(iTlist, iTStart)
+
+  n = length(factors)
+  for i in 2:n-1
+    factor = factors[i]
+    idxres = size(factor)
+    L = Indices[i]
+    Q = Index(idxres[3], "Q")
+    iTmid = ITensor(factor, B, L, Q)
+    push!(iTlist, iTmid)
+    B=Q
+  end
+
+  facEnd = factors[end]
+  idxres = size(facEnd)
+  P = Indices[end]
+  iTEnd = ITensor(facEnd, B, P)
+  push!(iTlist, iTEnd)
+
+  recT = iTlist[1]
+  for i in 2:n
+    recT = recT * iTlist[i]
+  end
+  return recT  
+
+end
+
+function ErrorEval(T, recT)
+  return norm(T - recT) / norm(T)
 end
 
 let 
@@ -31,19 +91,79 @@ let
   I = Index(3, "index_i")
   J = Index(4, "index_j")
   K = Index(5, "index_k")
-  T = ITensor(I, J, K)
+  M = Index(2, "index_m")
+  N = Index(3, "index_n")
+  Indices = (I, J, K, M, N)
+  println(Indices)
+
+  
+  T = ITensor(I, J, K, M, N)
   for i in 1:dim(I)
-      for j in 1:dim(J)
-          for k in 1:dim(K)
-              T[i,j,k] = i+j+k-1-1-1              
+    for j in 1:dim(J)
+      for k in 1:dim(K)
+        for m in 1:dim(M)
+          for n in 1:dim(N)
+            T[i,j,k,m,n] = (i-1) - (j-1) + (k-1) - (m-1) + (n-1)                    
           end
+        end
       end
+    end
   end
-  @show T
+  #@show T
   
   r_max = 5
   eps = 1E-4
-  TTSVD(T, r_max, eps)
+  factors = TTSVD(T, r_max, eps)
+  @show factors
+  
+  recT = TTContraction(factors, Indices)
+  @show recT
+
+
+  err = ErrorEval(T, recT)
+  @show err
+  
+  
+  #=
+  fac1 = factors[1]
+  idxres = size(fac1)
+  P = Index(idxres[2], "P")
+  B = Index(idxres[3], "B")
+  iT1 = ITensor(fac1, P, B)
+
+
+  
+
+  fac2 = factors[2]
+  idxres = size(fac2)
+  L = Index(idxres[2], "L")
+  Q = Index(idxres[3], "Q")
+  iT2 = ITensor(fac2, B, L, Q)
+  B=Q
+
+  fac3 = factors[3]
+  idxres = size(fac3)
+  P = Index(idxres[2], "P")
+  iT3 = ITensor(fac3, B, P)
+
+  iT = iT1 * iT2 * iT3
+  @show iT
+
+  for i = 1:order(T)-1
+    factorL = factors[i]
+    factorR = factors[i+1]
+    idxL = size(factorL)
+    idxR = size(factorR)
+    I = Index(idxL[1], "index_i")
+    J = Index(idxL[2], "index_j")
+    K = Index(idxL[3], "index_k")
+    M = Index(idxR[2], "index_m")
+    N = Index(idxR[3], "index_n")
+    iTL = ITensor(factorL, I, J, K)
+    ITR = ITensor(factorR, K, M, N)
+    
+  end
+  =#
 
 end
 
