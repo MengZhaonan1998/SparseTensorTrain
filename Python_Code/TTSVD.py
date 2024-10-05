@@ -46,12 +46,15 @@ def TTSVD(tensorX: tl.tensor, r_max: int, eps: float) -> list[tl.tensor]:
 I = 3
 J = 4
 K = 5
-T = np.zeros([I,J,K])
+M = 2
+N = 3
+T = np.zeros([I,J,K,M,N])
 for i in range(I):
     for j in range(J):
         for k in range(K):
-            T[i,j,k] = i+j+k
-print(T)
+            for m in range(M):
+                for n in range(N):
+                    T[i,j,k,m,n] = i-j+k-m+n
 factors = TTSVD(T, 5, 1e-4)
 factors.reverse()
 reconT = tl.tt_to_tensor(factors)
