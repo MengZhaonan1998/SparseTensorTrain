@@ -4,10 +4,6 @@ using ITensorTCI: interpolative
 using ITensors
 using NDTensors
 
-function TTID(T::ITensor, eps::Float64)
-
-end
-
 function TTSVD(T::ITensor, r_max::Int64, eps::Float64)
   idx = size(T)    # shape(index) of the input ITensor T
   dim = order(T)   # dimension number
@@ -40,6 +36,60 @@ function TTSVD(T::ITensor, r_max::Int64, eps::Float64)
     nbar = Int(nbar * ri / idx[i] / r)
     r = ri
     W = U[:, 1:ri] * Diagonal(S[1:ri])
+    #@show W
+    pushfirst!(factors, Ti)
+  end
+  Ti = reshape(W, (1, idx[1], r))
+  pushfirst!(factors, Ti)
+  return factors
+end
+
+function TTID(T::ITensor, r_max::Int64, eps::Float64)
+  idx = size(T)    # shape(index) of the input ITensor T
+  dim = order(T)   # dimension number
+  delta = (eps / sqrt(dim - 1)) * norm(T)  # Truncation parameter
+  nbar = 1         # total size of T = i_x * i_y * i_z...
+  for i in 1:dim
+    nbar *= idx[i]
+  end
+  r = 1         # rank
+  W = array(T)  # copy tensor T -> W
+  factors = []
+  for i in dim:-1:2
+    reshapeR = Int(nbar / r / idx[i])
+    reshapeC = Int(r * idx[i])
+    W = reshape(W, (reshapeR, reshapeC)) # reshape   
+    #@show W
+    
+    U, S, V = svd(W)   # Singular value decomposition of W
+    
+
+    cutoff = 1E-3
+    C, Z, piv_cols, inf_err = interpolative(Float64.(W); cutoff)
+    @printf("Two-norm error = %.3E\n", norm(C*Z - W, 2))
+    @printf("∞-norm error = %.3E\n", norm(C*Z - W, Inf))
+    shapeC = size(C)
+    shapeZ = size(Z)
+    
+    ri = shapeC[2]
+
+    Vh = Z  # Transpose V -> V^T
+    # Compute rank r
+    #s = 0
+    #j = length(S)
+    #while s <= delta * delta
+    #  s += S[j] * S[j]
+    #  j -= 1
+    #end
+    #j += 1
+    #ri = min(j, r_max)
+    
+    
+    vv = Vh[1:ri, :]
+    Ti = reshape(vv, (ri, idx[i], r))
+    nbar = Int(nbar * ri / idx[i] / r)
+    r = ri
+    W = C[:, 1:ri] #U[:, 1:ri] * Diagonal(S[1:ri])
     #@show W
     pushfirst!(factors, Ti)
   end
@@ -86,6 +136,69 @@ function ErrorEval(T, recT)
   return norm(T - recT) / norm(T)
 end
 
+function TensorSparsityStat(T)
+  idx = size(T)    # shape(index) of the input ITensor T
+  dim = length(idx)   # dimension number
+  arrayT = array(T)
+  absT = broadcast(abs, arrayT)
+  zeroList = findall(<(1E-14), absT)
+  cntZero = size(zeroList)[1]
+  nbar = 1         # total size of T = i_x * i_y * i_z...
+  for i in 1:dim
+    nbar *= idx[i]
+  end
+  cntNz = nbar - cntZero
+  density = cntNz / nbar
+  @printf("Density = %.3E\n", density)
+  @printf("Number of non-zeros = %d\n", cntNz)
+end
+
+
+let
+  # Try out TTID ?/
+  I = Index(3, "index_i")
+  J = Index(4, "index_j")
+  K = Index(5, "index_k")
+  M = Index(2, "index_m")
+  N = Index(3, "index_n")
+  Indices = (I, J, K, M, N)
+  println(Indices)
+
+  T = random_itensor(I, J, K, M, N)  
+  # UGLY BLOCK
+  sparsity = 0.80
+  for i in 1:dim(I)
+    for j in 1:dim(J)
+      for k in 1:dim(K)
+        for m in 1:dim(M)
+          for n in 1:dim(N)
+            if rand() < sparsity
+              T[i,j,k,m,n] = 0.0
+            end
+          end
+        end
+      end
+    end
+  end
+
+  TensorSparsityStat(T)
+
+  r_max = 20
+  eps = 1E-8
+  factors = TTID(T, r_max, eps)  
+  recT = TTContraction(factors, Indices)
+
+  err = ErrorEval(T, recT)
+  @show err
+
+  # Sparsity statistics
+  for i in 1:length(Indices)
+    TensorSparsityStat(factors[i])
+  end
+  
+end
+
+
 let 
   # Try out TTSVD
   I = Index(3, "index_i")
@@ -110,7 +223,7 @@ let
     end
   end
   #@show T
-  
+
   r_max = 5
   eps = 1E-4
   factors = TTSVD(T, r_max, eps)
@@ -187,8 +300,8 @@ let
 end
 
 let
-    n = 3
-    m = 20
+    n = 300
+    m = 3
     k = 4
     eps = 1E-5
     cutoff = 1E-3
