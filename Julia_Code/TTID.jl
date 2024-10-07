@@ -62,16 +62,25 @@ function TTID(T::ITensor, r_max::Int64, eps::Float64)
     #@show W
     
     U, S, V = svd(W)   # Singular value decomposition of W
-    
+    # Compute optimal rank r
+    s = 0
+    j = length(S)
+    while s <= delta * delta
+      s += S[j] * S[j]
+      j -= 1
+    end
+    j += 1
+    ri = min(j, r_max)
 
-    cutoff = 1E-3
-    C, Z, piv_cols, inf_err = interpolative(Float64.(W); cutoff)
+    cutoff = 1E-2
+    maxdim = ri 
+    C, Z, piv_cols, inf_err = interpolative(Float64.(W); cutoff, maxdim)
     @printf("Two-norm error = %.3E\n", norm(C*Z - W, 2))
     @printf("∞-norm error = %.3E\n", norm(C*Z - W, Inf))
     shapeC = size(C)
     shapeZ = size(Z)
     
-    ri = shapeC[2]
+    #ri = shapeC[2]
 
     Vh = Z  # Transpose V -> V^T
     # Compute rank r
@@ -141,7 +150,7 @@ function TensorSparsityStat(T)
   dim = length(idx)   # dimension number
   arrayT = array(T)
   absT = broadcast(abs, arrayT)
-  zeroList = findall(<(1E-14), absT)
+  zeroList = findall(<(1E-10), absT)
   cntZero = size(zeroList)[1]
   nbar = 1         # total size of T = i_x * i_y * i_z...
   for i in 1:dim
@@ -159,14 +168,14 @@ let
   I = Index(3, "index_i")
   J = Index(4, "index_j")
   K = Index(5, "index_k")
-  M = Index(2, "index_m")
+  M = Index(4, "index_m")
   N = Index(3, "index_n")
   Indices = (I, J, K, M, N)
   println(Indices)
 
   T = random_itensor(I, J, K, M, N)  
   # UGLY BLOCK
-  sparsity = 0.80
+  sparsity = 0.90
   for i in 1:dim(I)
     for j in 1:dim(J)
       for k in 1:dim(K)
@@ -183,8 +192,8 @@ let
 
   TensorSparsityStat(T)
 
-  r_max = 20
-  eps = 1E-8
+  r_max = 11
+  eps = 1E-4
   factors = TTID(T, r_max, eps)  
   recT = TTContraction(factors, Indices)
 
@@ -196,16 +205,17 @@ let
     TensorSparsityStat(factors[i])
   end
   
+  @show factors
 end
 
 
 let 
   # Try out TTSVD
-  I = Index(3, "index_i")
+  I = Index(5, "index_i")
   J = Index(4, "index_j")
-  K = Index(5, "index_k")
-  M = Index(2, "index_m")
-  N = Index(3, "index_n")
+  K = Index(3, "index_k")
+  M = Index(5, "index_m")
+  N = Index(6, "index_n")
   Indices = (I, J, K, M, N)
   println(Indices)
 
