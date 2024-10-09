@@ -2,7 +2,10 @@ import numpy as np
 import tensorly as tl
 import sparse as sp
 import scipy as sc
-from SparseTTCross import sparse_ttcross
+
+from tensorly.contrib.decomposition import tensor_train_cross
+from STTCross import sparse_ttcross
+from STTSVD import ttsvd
 
 def SparseInfo(factors: list[np.array]):
     avgsparsity = 0

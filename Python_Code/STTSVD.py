@@ -2,9 +2,8 @@ import numpy as np
 import sparse as sp
 import numpy.linalg as la
 import tensorly as tl
-#import tensorly.tenalg.proximal as prox
 
-def TTSVD(tensorX: tl.tensor, r_max: int, eps: float) -> list[tl.tensor]:
+def ttsvd(tensorX: tl.tensor, r_max: int, eps: float) -> list[tl.tensor]:
     shape = tensorX.shape  # Get the shape of input tensor: [n1, n2, ..., nd]
     dim = len(shape)       # Get the number of dimension
     delta = (eps / np.sqrt(dim - 1)) * tl.norm(tensorX, 2)  # Truncation parameter
@@ -37,21 +36,10 @@ def TTSVD(tensorX: tl.tensor, r_max: int, eps: float) -> list[tl.tensor]:
     
     T1 = tl.reshape(W, [1, shape[0], r])
     ttList.append(T1)    
+    ttList.reverse()
     return ttList
 
-def TensorSparseStat(factors: list[np.array]):
-    print("The sparsity statistics of the input tensor is as follows ...")
-    for i in range(len(factors)):
-        factor = factors[i]
-        size = factor.size
-        shape = factor.shape
-        cntzero = np.count_nonzero(np.abs(factor) < 1e-10)
-        cntnzero = size - cntzero
-        sparsity = cntzero / size
-        density = cntnzero / size
-        print(f"Tensor factor {i}: shape = {shape}, size = {size}, # zero = {cntzero}, sparsity = {sparsity}, # non-zero = {cntnzero}, density = {density}")
-    return
-
+'''
 def TestCase1():
     # Complete random tensor test 1 (TTSVD)
     print("Unit test 1 starts!")
@@ -64,7 +52,6 @@ def TestCase1():
     TensorSparseStat([SpTd])
     
     factors = TTSVD(SpTd, 12, 1e-4)
-    factors.reverse()
     reconT = tl.tt_to_tensor(factors)
     print(f"The TTSVD reconstruction error is {tl.norm(SpTd-reconT, 2)/tl.norm(SpTd, 2)}")
     TensorSparseStat(factors)
@@ -84,7 +71,6 @@ def TestCase2():
     TensorSparseStat([SpTd])
     
     factors = TTSVD(SpTd, 21, 1e-4)
-    factors.reverse()
     reconT = tl.tt_to_tensor(factors)
     print(f"The TTSVD reconstruction error is {tl.norm(SpTd-reconT, 2)/tl.norm(SpTd, 2)}")
     TensorSparseStat(factors)
@@ -94,8 +80,8 @@ def TestCase2():
 
 TestCase1()
 TestCase2()
-
 print("All unit tests finished.")
+'''
 
 '''
 rng = tl.check_random_state(10)  # Fix the random seed for reproducibility
