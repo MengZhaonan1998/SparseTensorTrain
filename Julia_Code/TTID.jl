@@ -158,11 +158,15 @@ function TensorSparsityStat(T)
   end
   cntNz = nbar - cntZero
   density = cntNz / nbar
-  @printf("Density = %.3E\n", density)
-  @printf("Number of non-zeros = %d\n", cntNz)
+  @show idx
+  @printf("Density = %.3E, Number of non-zeros = %d\n", density, cntNz)
 end
 
 
+
+
+
+#=
 let
   # Try out TTID ?/
   I = Index(3, "index_i")
@@ -343,5 +347,4 @@ let
     return
 end
 
-
-
+=#
