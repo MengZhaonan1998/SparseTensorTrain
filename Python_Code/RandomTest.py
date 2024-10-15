@@ -1,15 +1,10 @@
-import sys
-sys.path.append("/home/mengzn/Desktop/SparseTensorTrain/Python_Code")
-
 import numpy as np
 import sparse as sp
 import tensorly as tl
-
-from SparseTTCross import sparse_ttcross
 from tensorly.contrib.decomposition import tensor_train_cross
 
-from Python_Code.STTSVD import TTSVD  ## TT-SVD written by MENG
-from Python_Code.STTSVD import TensorSparseStat
+from STTSVD import ttsvd  ## TT-SVD written by MENG
+from Utils import TensorSparseStat
 
 '''
 def TestCase1():
@@ -37,16 +32,16 @@ def TestCase1():
 
 def TestCase1():
     # Generate the random sparse tensor
-    shape = [3, 4, 3, 2, 4]
-    density = 0.1
+    shape = [5, 8, 5, 3, 4]
+    density = 0.05
     seed = 10
     SpT = sp.random(shape, density, random_state=seed)
     SpTd = SpT.todense()
     TensorSparseStat([SpTd])
 
-    maxdim = 12
+    maxdim = 25
     cutoff = 2.7E-1    
-    factors = TTSVD(SpTd, maxdim, cutoff)
+    factors = ttsvd(SpTd, maxdim, cutoff)
     reconT = tl.tt_to_tensor(factors)
     print(f"The TTSVD reconstruction error is {tl.norm(SpTd-reconT, 2)/tl.norm(SpTd, 2)}")
     TensorSparseStat(factors)

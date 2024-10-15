@@ -47,7 +47,7 @@ def testCase1():
     tol = 1e-10
     maxiter = 500
     #factors = sparse_ttcross(SpTd, rank, tol, maxiter, random_state)
-    factors = tensor_train_cross(SpTd, rank, tol, maxiter, random_state)
+    factors = tensor_train_cross(SpTd, [1,9,9,1], tol, maxiter, random_state)
     # Check the reconstruction error and sparsity information
     reconT = tl.tt_to_tensor(factors)
     error = tl.norm(reconT - SpTd, 2) / tl.norm(SpTd, 2)
@@ -103,14 +103,14 @@ def testCase2():
     
 def testCase3():
     '''
-    10x20x20x10 tensor (4e4 size) -> 5x10 + 5x20x10 + 5x20x10 + 5x10 factors (2100 size)
-    Sparse ...
+    Same configuration with the Julia unit test of TTID
+    To compare ...
     '''
     print("Unit test 3 starts!")
     
-    rank = [1, 3, 5, 5, 3, 1]           # TT rank
-    order = [5, 10, 10, 10, 5]          # tensor order
-    density = [0.4, 0.2, 0.1, 0.2, 0.4] # density for every factor
+    rank = [1, 5, 9, 7, 8, 1]           # TT rank
+    order = [3, 6, 2, 4, 5]             # tensor order
+    density = [0.2, 0.1, 0.2, 0.1, 0.2] # density for every factor
     seed = [1, 2, 3, 4, 5]              # random seeds
     factors = []                        # factor list 
 
@@ -132,8 +132,8 @@ def testCase3():
     
     # TT Cross 
     random_state = 100
-    tol = 1e-10
-    maxiter = 500
+    tol = 1e-5
+    maxiter = 100
     factors = tensor_train_cross(SpTd, rank, tol, maxiter, random_state)     
     # Check the reconstruction error and sparsity information
     reconT = tl.tt_to_tensor(factors)
@@ -146,8 +146,8 @@ def testCase3():
 
 
 testCase1()
-testCase2()
-testCase3()
+#testCase2()
+#testCase3()
 
 # NOTE:
 # control variable: Dimension, shape...?
