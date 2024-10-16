@@ -6,7 +6,7 @@ using NDTensors
 
 function TTSVD(T::ITensor, r_max::Int64, eps::Float64)
   idx = size(T)    # shape(index) of the input ITensor T
-  dim = order(T)   # dimension number
+  dim = length(idx)   # dimension number
   delta = (eps / sqrt(dim - 1)) * norm(T)  # Truncation parameter
   nbar = 1         # total size of T = i_x * i_y * i_z...
   for i in 1:dim
@@ -46,7 +46,7 @@ end
 
 function TTID(T::ITensor, r_max::Int64, eps::Float64)
   idx = size(T)    # shape(index) of the input ITensor T
-  dim = order(T)   # dimension number
+  dim = length(idx)   # dimension number
   delta = (eps / sqrt(dim - 1)) * norm(T)  # Truncation parameter
   nbar = 1         # total size of T = i_x * i_y * i_z...
   for i in 1:dim
