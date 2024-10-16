@@ -32,15 +32,15 @@ def TestCase1():
 
 def TestCase1():
     # Generate the random sparse tensor
-    shape = [5, 8, 5, 3, 4]
+    shape = [8, 8, 8, 8]
     density = 0.05
-    seed = 10
+    seed = 0
     SpT = sp.random(shape, density, random_state=seed)
     SpTd = SpT.todense()
     TensorSparseStat([SpTd])
 
-    maxdim = 25
-    cutoff = 2.7E-1    
+    maxdim = 60
+    cutoff = 1e-5    
     factors = ttsvd(SpTd, maxdim, cutoff)
     reconT = tl.tt_to_tensor(factors)
     print(f"The TTSVD reconstruction error is {tl.norm(SpTd-reconT, 2)/tl.norm(SpTd, 2)}")
@@ -54,10 +54,10 @@ def TestCase1():
     rank.append(1)
     print(f"The optimal rank is {rank}")
     
-    spFactors = tensor_train_cross(SpTd, rank, cutoff)
-    reconT = tl.tt_to_tensor(spFactors)
-    print(f"The TTCross reconstruction error is {tl.norm(SpTd-reconT, 2)/tl.norm(SpTd, 2)}")
-    TensorSparseStat(spFactors)
+    #spFactors = tensor_train_cross(SpTd, rank, cutoff)
+    #reconT = tl.tt_to_tensor(spFactors)
+    #print(f"The TTCross reconstruction error is {tl.norm(SpTd-reconT, 2)/tl.norm(SpTd, 2)}")
+    #TensorSparseStat(spFactors)
     
     return 
 

@@ -14,6 +14,7 @@ def ttsvd(tensorX: tl.tensor, r_max: int, eps: float) -> list[tl.tensor]:
     ttList = []        # list storing tt factors
     iterlist = list(range(1, dim))  # Create iteration list: 1, 2, ..., d-1
     iterlist.reverse()              # Reverse the iteration list: d-1, ..., 1 
+    verbose = 1
     
     for i in iterlist:
         W = tl.reshape(W, [int(nbar / r / shape[i]), int(r * shape[i])])  # Reshape W
@@ -27,6 +28,11 @@ def ttsvd(tensorX: tl.tensor, r_max: int, eps: float) -> list[tl.tensor]:
             s += S[j] * S[j]
         j += 1
         ri = min(j, r_max)  # r_i-1 = min(r_max, r_delta_i)
+    
+        if verbose == 1:
+            approxLR = U[:, 0:ri] @ np.diag(S[0:ri]) @ Vh[0:ri, :]
+            rerror = tl.norm(approxLR - W, 2) / tl.norm(W, 2)
+            print(f"Iteration {i} -- low rank approximation error = {rerror}")
     
         Ti = tl.reshape(Vh[0:ri, :], [ri, shape[i], r])
         nbar = int(nbar * ri / shape[i] / r)  # New total size of W

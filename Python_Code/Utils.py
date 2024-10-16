@@ -1,4 +1,6 @@
 import numpy as np
+import sparse as sp
+import time as tm
 
 # Show sparsity information of the input tensor array 
 def TensorSparseStat(factors: list[np.array]):
@@ -28,3 +30,27 @@ def CastValueAroundZero(Mat: np.array, Pct: float) -> np.array:
     thresVal = sortMat[thresIdx]    
     Mat = np.where(absMat > thresVal, Mat, 0)
     return Mat
+
+# Read FROSTT data
+def readfrostt(path: str, shape: tuple):
+    print(f"Start loading tensor data {path}...")
+    start_t = tm.time()
+    #is_it_equal_function = lambda x:x in shape
+    shape = np.array(shape)
+    with open(path, "r") as file:
+        modeList = []
+        for line in file:
+            numbers = line.strip().split()
+            numbers = np.array([int(num) for num in numbers])
+            coords = numbers[:-1]-1
+            cmp = coords < shape
+            if np.all(cmp):
+                modeList.append(numbers)
+        modeList = np.array(modeList, dtype=np.int32)
+        modeList = modeList.T
+        data = modeList[-1] 
+        coords = modeList[:-1]-1
+        spt = sp.COO(coords, data, shape)
+    end_t = tm.time()
+    print(f"Finish loading! It took {end_t - start_t} seconds.")
+    return spt
