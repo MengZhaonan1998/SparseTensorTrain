@@ -142,7 +142,7 @@ function testCase4()
     order = [20, 20, 20]    
     rank = [1, 10, 10, 1]
     density = [0.1, 0.1, 0.1] 
-    ttFactors = RandomTTGen(order, rank, density, 1)
+    ttFactors = RandomTTGen(order, rank, density, 10000)
     I = Index(order[1], "index_i")
     J = Index(order[2], "index_j")
     K = Index(order[3], "index_k")
@@ -155,7 +155,7 @@ function testCase4()
     Tensor = TTContraction(ttFactors, Indices)
     TensorSparsityStat(Tensor)
   
-    r_max = 9
+    r_max = 10
     eps = 1E-4
     idFactors = TTID(Tensor, r_max, eps)
     recTensor = TTContraction(idFactors, Indices)

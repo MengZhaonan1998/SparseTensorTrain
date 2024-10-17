@@ -21,7 +21,7 @@ def testCase1():
     rank = [1, 10, 10, 1]       # TT rank
     order = [20, 20, 20]        # tensor order
     density = [0.1, 0.1, 0.1]   # density for every factor
-    seed = [1, 2, 3]            # random seeds
+    seed = [100, 70, 4]            # random seeds
     factors = []                # factor list 
 
     # Construct sparse tensor factors in a sparse format
@@ -46,8 +46,9 @@ def testCase1():
     random_state = 1
     tol = 1e-10
     maxiter = 500
+    rank = [1, 9, 10, 1]
     #factors = sparse_ttcross(SpTd, rank, tol, maxiter, random_state)
-    factors = tensor_train_cross(SpTd, [1,9,9,1], tol, maxiter, random_state)
+    factors = tensor_train_cross(SpTd, rank, tol, maxiter, random_state)
     # Check the reconstruction error and sparsity information
     reconT = tl.tt_to_tensor(factors)
     error = tl.norm(reconT - SpTd, 2) / tl.norm(SpTd, 2)
@@ -146,7 +147,7 @@ def testCase3():
 
 
 
-#testCase1()
+testCase1()
 #testCase2()
 #testCase3()
 

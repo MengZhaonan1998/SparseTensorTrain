@@ -36,7 +36,7 @@ def UnitTest1():
     print(f"The input sparse tensor: shape = {shape}, nnz = {SpT.nnz}, density = {SpT.density}")    
     
     SpTd = SpT.todense() # need to eliminate this some day
-    maxdim = 40
+    maxdim = 39
 
     cutoff = 1e-5    
     factors = ttsvd(SpTd, maxdim, cutoff)
