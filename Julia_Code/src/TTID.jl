@@ -107,6 +107,69 @@ function TTID(T::ITensor, r_max::Int64, eps::Float64)
   return factors
 end
 
+function TTID_Array(T::Array, r_max::Int64, eps::Float64)
+  idx = size(T)    # shape(index) of the input ITensor T
+  dim = length(idx)   # dimension number
+  delta = (eps / sqrt(dim - 1)) * norm(T)  # Truncation parameter
+  nbar = 1         # total size of T = i_x * i_y * i_z...
+  for i in 1:dim
+    nbar *= idx[i]
+  end
+  r = 1         # rank
+  W = array(T)  # copy tensor T -> W
+  factors = []
+  for i in dim:-1:2
+    reshapeR = Int(nbar / r / idx[i])
+    reshapeC = Int(r * idx[i])
+    W = reshape(W, (reshapeR, reshapeC)) # reshape   
+    #@show W
+    
+    U, S, V = svd(W)   # Singular value decomposition of W
+    # Compute optimal rank r
+    s = 0
+    j = length(S)
+    while s <= delta * delta
+      s += S[j] * S[j]
+      j -= 1
+    end
+    j += 1
+    ri = min(j, r_max)
+
+    cutoff = 1e-5
+    maxdim = ri 
+    C, Z, piv_cols, inf_err = interpolative(Float64.(W); maxdim)
+    @printf("Two-norm error = %.3E\n", norm(C*Z - W, 2))
+    @printf("∞-norm error = %.3E\n", norm(C*Z - W, Inf))
+    shapeC = size(C)
+    shapeZ = size(Z)
+    
+    #ri = shapeC[2]
+
+    Vh = Z  # Transpose V -> V^T
+    # Compute rank r
+    #s = 0
+    #j = length(S)
+    #while s <= delta * delta
+    #  s += S[j] * S[j]
+    #  j -= 1
+    #end
+    #j += 1
+    #ri = min(j, r_max)
+    
+    
+    vv = Vh[1:ri, :]
+    Ti = reshape(vv, (ri, idx[i], r))
+    nbar = Int(nbar * ri / idx[i] / r)
+    r = ri
+    W = C[:, 1:ri] #U[:, 1:ri] * Diagonal(S[1:ri])
+    #@show W
+    pushfirst!(factors, Ti)
+  end
+  Ti = reshape(W, (1, idx[1], r))
+  pushfirst!(factors, Ti)
+  return factors
+end
+
 function TTContraction(factors, Indices)
   iTlist = []
   facStart = factors[1]
@@ -142,7 +205,7 @@ function TTContraction(factors, Indices)
 end
 
 function ErrorEval(T, recT)
-  return norm(T - recT) / norm(T)
+  return norm(array(T) - array(recT)) / norm(T)
 end
 
 function TensorSparsityStat(T)
