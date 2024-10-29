@@ -1,0 +1,34 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/synthetic_test",  // Path to your built executable
+            "args": [], // Pass any command-line arguments here
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "CMake: build", // Ensures the executable is up-to-date before running
+            "miDebuggerPath": "/usr/bin/gdb", // Path to gdb (adjust if different)
+            "setupCommands": [
+                {
+                    "text": "set follow-fork-mode child"
+                }
+            ],
+            "logging": {
+                "engineLogging": false
+            }
+        }
+    ]
+}
