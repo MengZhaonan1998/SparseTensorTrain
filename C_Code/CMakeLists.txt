@@ -1,9 +1,28 @@
 cmake_minimum_required(VERSION 3.8)
 
+# Project name
+project(SparseTensorTrain)
+
+# Set C++ standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+# Set default build type
 set(default_build_type "Debug")
 
-project(ttsvd LANGUAGES CXX)
+# Include directory for headers
+include_directories(include)
 
-add_executable(ttsvd src/ttsvd.cpp)
+# Define sources
+set(SOURCES_1
+    src/algo_test/synthetic_test.cpp
+    src/algorithm/ttsvd.cpp
+    src/algorithm/ttid.cpp)
 
-target_compile_features(ttsvd PUBLIC cxx_std_14)
+set(SOURCES_2
+    src/algo_test/frostt_test.cpp
+    src/algorithm/ttsvd.cpp
+    src/algorithm/ttid.cpp)
+
+add_executable(synthetic_test ${SOURCES_1})
+add_executable(frostt_test ${SOURCES_2})
