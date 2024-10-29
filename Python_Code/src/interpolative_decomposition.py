@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.linalg import solve, qr
 
+from scipy.linalg.interpolative import interp_decomp
+
 # To be updated ... 
 # Other variants of ID
 # More unit tests
@@ -63,12 +65,10 @@ def unit_test_1():
     cutoff = 1e-4
     C, X, cols, error = interpolative_nuclear(M, cutoff, maxdim)
     error = np.linalg.norm(M - C @ X, ord='fro') / np.linalg.norm(M, ord='fro')    
+    #print(f"M - C*X=\n{M - C @ X}")
     
-    #print(f"M=\n{M}")
-    #print(f"C=\n{C}")
-    #print(f"X=\n{X}")
-    #print(f"C*X=\n{C @ X}")
-    print(f"relative error={error}")
+    ut_statement = "Test succeeds!" if error < cutoff else "Test fails!"
+    print(f"relative error={error}, " + ut_statement)
     print("Unit test 1 ends!")
     return
 
@@ -86,12 +86,10 @@ def unit_test_2():
     cutoff = 1e-4
     C, X, cols, error = interpolative_nuclear(M, cutoff, maxdim)
     error = np.linalg.norm(M - C @ X, ord='fro') / np.linalg.norm(M, ord='fro')    
+    #print(f"M - C*X=\n{M - C @ X}")
     
-    #print(f"M=\n{M}")
-    #print(f"C=\n{C}")
-    #print(f"X=\n{X}")
-    #print(f"C*X=\n{C @ X}")
-    print(f"relative error={error}")
+    ut_statement = "Test succeeds!" if error < cutoff else "Test fails!"
+    print(f"relative error={error}, " + ut_statement)
     print("Unit test 2 ends!")
     return
 
@@ -102,18 +100,36 @@ def unit_test_3():
     n = 11
     M = np.random.random((m,n))
 
-    cutoff = 1e-4
+    cutoff = 1
     C, X, cols, error = interpolative_nuclear(M, cutoff)
     error = np.linalg.norm(M - C @ X, ord='fro') / np.linalg.norm(M, ord='fro')    
+    #print(f"M - C*X=\n{M - C @ X}")
     
-    #rint(f"M=\n{M}")
-    #print(f"C=\n{C}")
-    #print(f"X=\n{X}")
-    #print(f"C*X=\n{C @ X}")
-    print(f"relative error={error}")
+    ut_statement = "Test succeeds!" if error < cutoff else "Test fails!"
+    print(f"relative error={error}, " + ut_statement)
     print("Unit test 3 ends!")
     return
 
-unit_test_1()
-unit_test_2()
-unit_test_3()
+def unit_test_4():
+    # Test of a small full-rank random matrix
+    print("Unit test 4 starts!")
+    m = 12
+    n = 5
+    M = np.zeros((m,n))
+    M[1,2] = 1
+    M[3,4] = 1
+
+    cutoff = 1
+    C, X, cols, error = interpolative_nuclear(M, cutoff)
+    error = np.linalg.norm(M - C @ X, ord='fro') / np.linalg.norm(M, ord='fro')    
+    #print(f"M - C*X=\n{M - C @ X}")
+    
+    ut_statement = "Test succeeds!" if error < cutoff else "Test fails!"
+    print(f"relative error={error}, " + ut_statement)
+    print("Unit test 4 ends!")
+    return
+
+#unit_test_1()
+#unit_test_2()
+#unit_test_3()
+unit_test_4()

@@ -28,6 +28,24 @@ function interpolative_nuclear(M::Matrix; cutoff=0.0, maxdim=min(size(M)))
 end
 
 let
+  M = zeros(5,6)
+  M[1,2] = 1
+  M[2,4] = 1
+  cutoff = 1E-3
+  maxdim = 2
+  println("M = "); display(M); println()
+
+  C, X, cols, error = interpolative_nuclear(M; cutoff, maxdim)
+
+  println("C = "); display(C); println()
+  println("X = "); display(X); println()
+  @printf("Two-norm error = %.3E\n", norm(C*X - M, 2))
+  @printf("∞-norm error = %.3E\n", norm(C*X - M, Inf))
+
+  return
+end
+
+let
   A = [3 1; 8 2; 9 -5; -7 4]
   B = [4 6 2; 8 -1 -4]
   M = A * B
