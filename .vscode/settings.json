@@ -1,3 +1,6 @@
 {
-    "cmake.sourceDirectory": "/home/mengzn/Desktop/SparseTensorTrain/C_Code"
+    "cmake.sourceDirectory": "/home/mengzn/Desktop/SparseTensorTrain/C_Code",
+    "files.associations": {
+        "type_traits": "cpp"
+    }
 }
