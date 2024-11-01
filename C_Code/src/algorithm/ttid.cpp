@@ -1,7 +1,7 @@
 
 
 template<class T>
-void ttid()
+void TT_ID()
 {
 
 }
