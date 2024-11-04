@@ -41,6 +41,11 @@ set(SOURCES_4
     src/algorithm/ttsvd.cpp
     src/algorithm/ttid.cpp)
 
+set(SOURCES_5
+    src/unit_test/unit_test_3.cpp
+    src/algorithm/ttsvd.cpp
+    src/algorithm/ttid.cpp)
+
 add_executable(synthetic_test ${SOURCES_1})
 add_executable(frostt_test ${SOURCES_2})
 
@@ -63,7 +68,9 @@ enable_testing()  # Enable testing in CMake
 # Define the test executable
 add_executable(unit_test_1 ${SOURCES_3})
 add_executable(unit_test_2 ${SOURCES_4})
+add_executable(unit_test_3 ${SOURCES_5})
 
 # Link Google Test libraries and other dependencies (LAPACK/BLAS)
 target_link_libraries(unit_test_1 PRIVATE gtest_main LAPACK::LAPACK ${LAPACKE_LIB} BLAS::BLAS ${TBLIS_LIB})
 target_link_libraries(unit_test_2 PRIVATE gtest_main LAPACK::LAPACK ${LAPACKE_LIB} BLAS::BLAS ${TBLIS_LIB})
+target_link_libraries(unit_test_3 PRIVATE gtest_main LAPACK::LAPACK ${LAPACKE_LIB} BLAS::BLAS ${TBLIS_LIB})

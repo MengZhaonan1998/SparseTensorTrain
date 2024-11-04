@@ -1,15 +1,11 @@
 #include <gtest/gtest.h>
-#include <tblis/tblis.h>
-
 #include "header.h"
-
-using namespace tblis;
 
 TEST(TblisTEST, tensor_contraction_1)
 {   
-    tensor<double> A({2, 4, 3});
-    tensor<double> B({3, 4, 5});
-    tensor<double> C({2, 5});
+    tblis::tensor<double> A({2, 4, 3});
+    tblis::tensor<double> B({3, 4, 5});
+    tblis::tensor<double> C({2, 5});
     
     // A initialization
     for (int i=0; i<2; ++i)
@@ -23,7 +19,7 @@ TEST(TblisTEST, tensor_contraction_1)
                 B(i,j,k) = i + j - k;
 
     // C <- contraction of A and B 
-    mult<double>(1.0, A, "abc", B, "cbd", 0.0, C, "ad");
+    tblis::mult<double>(1.0, A, "abc", B, "cbd", 0.0, C, "ad");
 
     int answer[2][5] = {{98, 68, 38, 8, -22}, 
                         {128, 86, 44, 2, -40}};
@@ -38,7 +34,7 @@ TEST(TblisTEST, tensor_contraction_1)
 
 TEST(TblisTEST, tensor_permute_1)
 {
-    tensor<float> A({2, 4, 3});
+    tblis::tensor<float> A({2, 4, 3});
     // A initialization
     for (int i=0; i<2; ++i)
         for (int j=0; j<4; ++j)
@@ -52,9 +48,9 @@ TEST(TblisTEST, tensor_permute_1)
 TEST(TblisTEST, tensor_reshape_1)
 {   
     // Reshape A(2,4,3)->B(12,2)->C(2,4,3)
-    tensor<float> A({2, 4, 3});
-    tensor<float> B({12, 2});
-    tensor<float> C({2, 4, 3});
+    tblis::tensor<float> A({2, 4, 3});
+    tblis::tensor<float> B({12, 2});
+    tblis::tensor<float> C({2, 4, 3});
 
     // A initialization
     for (int i=0; i<2; ++i)
