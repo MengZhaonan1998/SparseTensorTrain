@@ -15,6 +15,9 @@
 
 void fSVD(float* A, int m, int n, float* S, float* U, float* VT);
 void dSVD(double* A, int m, int n, double* S, double* U, double* VT);
+void dpivotedQR(int m, int n, double* A, double* Q, double* R, int* jpvt);
+double verifyQR(int m, int n, double* Q, double* R, double* A, int* jpvt);
+
 std::vector<tblis::tensor<double>> TT_SVD_dense(tblis::tensor<double> tensor, int r_max, double eps);
 
 namespace util

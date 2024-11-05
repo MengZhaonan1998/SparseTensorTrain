@@ -34,3 +34,54 @@ TEST(LapackeTEST, SVD_3by3)
     // Optional: Further checks on U and VT matrices can be added if needed.
 }
 
+TEST(LapackeTEST, QR_3by5)
+{
+    // Define a 3x3 matrix A (row-major order)
+    int m = 3, n = 5;
+    double A[15] = {12, -51, 4, 23, 26,
+                   6, 167, -68, -43, -9,
+                   -4, 24, -41, 3, 98};
+                   
+    double A_orig[15];
+    std::copy(A, A + 15, A_orig);  // Make a copy of A for verification
+    
+    double* Q = new double[m * m];
+    double* R = new double[m * n]{0.0};
+    int* jpvt = new int[n];       // Pivot indices
+
+    dpivotedQR(m, n, A, Q, R, jpvt);
+
+    // Step 4: Verify that QR - A is near zero
+    double error = verifyQR(m, n, Q, R, A_orig, jpvt);
+    EXPECT_NEAR(error, 0.0, 1E-10);
+
+    delete[] Q;
+    delete[] R;
+    delete[] jpvt;
+}
+
+TEST(LapackeTEST, QR_5by3)
+{
+    // Define a 3x3 matrix A (row-major order)
+    int m = 5, n = 3;
+    double A[15] = {12, -51, 4, 23, 26,
+                   6, 167, -68, -43, -9,
+                   -4, 24, -41, 3, 98};
+                   
+    double A_orig[15];
+    std::copy(A, A + 15, A_orig);  // Make a copy of A for verification
+    
+    double* Q = new double[m * m];
+    double* R = new double[m * n]{0.0};
+    int* jpvt = new int[n];       // Pivot indices
+
+    dpivotedQR(m, n, A, Q, R, jpvt);
+
+    // Step 4: Verify that QR - A is near zero
+    double error = verifyQR(m, n, Q, R, A_orig, jpvt);
+    EXPECT_NEAR(error, 0.0, 1E-10);
+
+    delete[] Q;
+    delete[] R;
+    delete[] jpvt;
+}
