@@ -1,11 +1,39 @@
 import numpy as np
-from scipy.linalg import solve, qr
+import time as tm
+from scipy.linalg import solve, qr, eigvals, svd
 
-from scipy.linalg.interpolative import interp_decomp
 
 # To be updated ... 
 # Other variants of ID
 # More unit tests
+
+def interpolative_qr(M, maxdim=None):
+    if maxdim is None:
+        maxdim = min(M.shape)
+    k = maxdim
+    _ , R , P = qr(M, pivoting =True, mode ='economic', check_finite = False)
+    R_k = R[:k, :k]
+    cols = P [:k]
+    C = M[:, cols]
+    Z = solve(R_k.T @ R_k, C.T @ M, overwrite_a=True, overwrite_b=True, assume_a ='pos')
+    approx = C @ Z
+    return approx , C , Z
+    
+def interpolative_sqr(M, maxdim=None):
+    row = M.shape[0]
+    col = M.shape[1]
+    if maxdim is None:
+        maxdim = min(M.shape)
+    if row <= col:
+        K = M @ M.T
+    else:
+        K = M.T @ M
+    svals = eigvals(K) #...TO BE DISCUSSED
+    svals = svals[np.sqrt(svals) > 1E-10]
+    rank = len(svals)
+    maxdim = rank if rank < maxdim else maxdim
+    approx, C, Z = interpolative_qr(M, maxdim)
+    return approx, C, Z
 
 def interpolative_nuclear(M, cutoff=0.0, maxdim=None):
     '''
@@ -75,21 +103,26 @@ def unit_test_1():
 def unit_test_2():
     # Test of a small low-rank random matrix 
     print("Unit test 2 starts!")
-    m = 4
-    n = 6
-    rank = 3
+    m = 200
+    n = 150
+    rank = 100
     A = np.random.random((m,rank))
     B = np.random.random((rank,n))
     M = A @ B
     
-    maxdim = 3
-    cutoff = 1e-4
+    maxdim = 100
+    cutoff = 1e-10
+    st = tm.time()
     C, X, cols, error = interpolative_nuclear(M, cutoff, maxdim)
+    et = tm.time()
     error = np.linalg.norm(M - C @ X, ord='fro') / np.linalg.norm(M, ord='fro')    
-    #print(f"M - C*X=\n{M - C @ X}")
+    print(f"id_nuclear takes {et-st} seconds. The relative recon error = {error}")
     
-    ut_statement = "Test succeeds!" if error < cutoff else "Test fails!"
-    print(f"relative error={error}, " + ut_statement)
+    st = tm.time()
+    approx, C, Z = interpolative_sqr(M, maxdim)
+    et = tm.time()
+    error = np.linalg.norm(M - approx,ord='fro') / np.linalg.norm(M, ord='fro')    
+    print(f"id_sqr takes {et-st} seconds. The relative recon error = {error}")
     print("Unit test 2 ends!")
     return
 
@@ -111,18 +144,15 @@ def unit_test_3():
     return
 
 def unit_test_4():
-    # Test of a small full-rank random matrix
     print("Unit test 4 starts!")
-    m = 12
-    n = 5
-    M = np.zeros((m,n))
-    M[1,2] = 1
-    M[3,4] = 1
+    m = 200
+    r = 150
+    n = 250
+    M = np.random.random((m,r)) @ np.random.random((r,n))
+    cutoff = 1E-10
 
-    cutoff = 1
-    C, X, cols, error = interpolative_nuclear(M, cutoff)
-    error = np.linalg.norm(M - C @ X, ord='fro') / np.linalg.norm(M, ord='fro')    
-    #print(f"M - C*X=\n{M - C @ X}")
+    approx, C, Z = interpolative_sqr(M, 150)
+    error = np.linalg.norm(M - approx, ord='fro') / np.linalg.norm(M, ord='fro')    
     
     ut_statement = "Test succeeds!" if error < cutoff else "Test fails!"
     print(f"relative error={error}, " + ut_statement)
@@ -130,6 +160,6 @@ def unit_test_4():
     return
 
 #unit_test_1()
-#unit_test_2()
+unit_test_2()
 #unit_test_3()
-unit_test_4()
+#unit_test_4()
