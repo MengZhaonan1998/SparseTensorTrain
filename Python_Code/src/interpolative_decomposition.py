@@ -1,19 +1,140 @@
 import numpy as np
 import time as tm
 from scipy.linalg import solve, qr, eigvals, svd
+from typing import Tuple, Union, List
 
+# What we have so far...
+# interpolative_prrldu
+# interpolative_qr
+# interpolative_sqr
+# interpolative_nuclear
 
-# To be updated ... 
-# Other variants of ID
-# More unit tests
+def prrldu(M_: np.ndarray, cutoff: float = 0.0, maxdim: int = np.iinfo(np.int32).max, mindim: int = 1) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[int], List[int], float]:
+    """
+    Implements the PRRLDU matrix decomposition algorithm.
+    Args:
+        M_: Input matrix
+        cutoff: Tolerance for considering values as zero
+        maxdim: Maximum dimension for the decomposition
+        mindim: Minimum dimension for the decomposition
+    Returns:
+        Tuple containing (L, d, U, row_perm_inv, col_perm_inv, inf_error)
+    """
+    assert maxdim > 0, "maxdim must be positive"
+    assert mindim > 0, "mindim must be positive"
+    mindim = min(maxdim, mindim)
+    
+    M = M_.copy()
+    Nr, Nc = M.shape
+    k = min(Nr, Nc)
+    
+    # Initialize permutations
+    rps = list(range(Nr))
+    cps = list(range(Nc))
+    
+    # Find pivots
+    inf_error = 0.0
+    s = 0
+    while s < k:
+        Mabs = np.abs(M[s:, s:])
+        if Mabs.size == 0:
+            break        
+        Mabs_max = np.max(Mabs)
+        if Mabs_max < cutoff:
+            inf_error = Mabs_max
+            break
+            
+        piv = np.unravel_index(np.argmax(Mabs), Mabs.shape)
+        piv = (piv[0] + s, piv[1] + s)
+        
+        # Swap rows and columns
+        M[[s, piv[0]], :] = M[[piv[0], s], :]
+        M[:, [s, piv[1]]] = M[:, [piv[1], s]]
+        
+        if s < k - 1:
+            M[(s+1):, (s+1):] = M[(s+1):, (s+1):] - \
+                np.outer(M[(s+1):, s], M[s, (s+1):]) / M[s, s]
+        
+        rps[s], rps[piv[0]] = rps[piv[0]], rps[s]
+        cps[s], cps[piv[1]] = cps[piv[1]], cps[s]
+        s += 1
+    
+    M = M_[rps, :][:, cps]
+    
+    # Initialize L, d, U
+    L = np.eye(Nr, k)
+    d = np.zeros(k)
+    U = np.eye(k, Nc)
+    rank = 0
+    
+    for s in range(min(k, maxdim)):
+        P = M[s, s]
+        d[s] = P
+
+        if rank < mindim:
+            pass
+        elif P == 0 or (abs(P) < cutoff and rank + 1 > mindim):
+            break
+            
+        if P == 0:
+            P = 1
+        rank += 1
+        
+        if s < Nr - 1:
+            piv_col = M[(s+1):, s]
+            L[(s+1):, s] = piv_col / P
+        if s < Nc - 1:
+            piv_row = M[s, (s+1):]
+            U[s, (s+1):] = piv_row / P
+        if s < k - 1:
+            M[(s+1):, (s+1):] = M[(s+1):, (s+1):] - \
+                np.outer(piv_col, piv_row) / P
+    
+    L = L[:, :rank]
+    d = d[:rank]
+    U = U[:rank, :]
+    
+    # Create inverse permutations
+    row_perm_inv = [0] * len(rps)
+    for i, p in enumerate(rps):
+        row_perm_inv[p] = i
+    col_perm_inv = [0] * len(cps)
+    for i, p in enumerate(cps):
+        col_perm_inv[p] = i
+    
+    return L, d, U, row_perm_inv, col_perm_inv, inf_error
+
+def interpolative_prrldu(M: np.ndarray, cutoff: float = 0.0, maxdim: int = np.iinfo(np.int32).max, mindim: int = 1) -> Tuple[np.ndarray, np.ndarray, List[int], float]:
+    """
+    Compute interpolative decomposition (ID) from PRRLDU.
+    Args:
+        M: Input matrix
+        **kwargs: Additional keyword arguments passed to prrldu
+    Returns:
+        Tuple containing (C, Z, pivot_columns, inf_error)
+        - C: Matrix containing selected columns
+        - Z: Interpolation matrix
+        - pivot_columns: List of pivot column indices
+        - inf_error: Error measure from PRRLDU
+    """
+    L, d, U, pr, pc, inf_error = prrldu(M, cutoff, maxdim, mindim)  # Compute PRRLDU decomposition
+    k = len(d)
+    U11 = U[:, :k]         # Extract relevant submatrices
+    iU11 = np.linalg.solve(U11, np.eye(U.shape[0])) # Compute inverse of U11 through backsolving
+    ZjJ = iU11 @ U         # Compute interpolation matrix
+    CIj = L @ np.diag(d) @ U11   # Compute selected columns
+    C = CIj[pr, :]   # Apply row permutation to get C
+    Z = ZjJ[:, pc]   # Apply column permutation to get Z
+    pivot_cols = [pc.index(i) for i in range(k)]  # Get pivot columns (convert from inverse permutation)
+    return C, Z, pivot_cols, inf_error
 
 def interpolative_qr(M, maxdim=None):
     if maxdim is None:
         maxdim = min(M.shape)
     k = maxdim
-    _ , R , P = qr(M, pivoting =True, mode ='economic', check_finite = False)
+    Q , R , P = qr(M, pivoting =True, mode ='economic', check_finite = False)
     R_k = R[:k, :k]
-    cols = P [:k]
+    cols = P[:k]
     C = M[:, cols]
     Z = solve(R_k.T @ R_k, C.T @ M, overwrite_a=True, overwrite_b=True, assume_a ='pos')
     approx = C @ Z
@@ -83,7 +204,7 @@ def interpolative_nuclear(M, cutoff=0.0, maxdim=None):
     return C, X, cols, error
 
 def unit_test_1():
-    # Test of a small low-rank fixed matrix
+    # Test of interpolative_nuclear
     print("Unit test 1 starts!")
     A = np.array([[3,1],[8,2],[9,-5],[-7,4]])
     B = np.array([[4,6,2],[8,-1,-4]])    
@@ -101,16 +222,16 @@ def unit_test_1():
     return
 
 def unit_test_2():
-    # Test of a small low-rank random matrix 
+    # Test of interpolative_sqr 
     print("Unit test 2 starts!")
-    m = 200
-    n = 150
-    rank = 100
+    m = 10
+    n = 8
+    rank = 5
     A = np.random.random((m,rank))
     B = np.random.random((rank,n))
     M = A @ B
     
-    maxdim = 100
+    maxdim = 5
     cutoff = 1e-10
     st = tm.time()
     C, X, cols, error = interpolative_nuclear(M, cutoff, maxdim)
@@ -127,15 +248,19 @@ def unit_test_2():
     return
 
 def unit_test_3():
-    # Test of a small full-rank random matrix
+    # Test of interpolative_prrldu
     print("Unit test 3 starts!")
     m = 12
     n = 11
-    M = np.random.random((m,n))
+    rank = 8
+    A = np.random.random((m, rank))
+    B = np.random.random((rank, n))
+    M = A @ B
 
-    cutoff = 1
-    C, X, cols, error = interpolative_nuclear(M, cutoff)
-    error = np.linalg.norm(M - C @ X, ord='fro') / np.linalg.norm(M, ord='fro')    
+    cutoff = 1E-5
+    maxdim = 9
+    C, Z, pivot_cols, inf_error = interpolative_prrldu(M, cutoff, 9)
+    error = np.linalg.norm(M - C @ Z, ord='fro') / np.linalg.norm(M, ord='fro')    
     #print(f"M - C*X=\n{M - C @ X}")
     
     ut_statement = "Test succeeds!" if error < cutoff else "Test fails!"
@@ -160,6 +285,6 @@ def unit_test_4():
     return
 
 #unit_test_1()
-unit_test_2()
-#unit_test_3()
+#unit_test_2()
+unit_test_3()
 #unit_test_4()
