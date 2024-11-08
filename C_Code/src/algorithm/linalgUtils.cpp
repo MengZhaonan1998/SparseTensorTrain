@@ -34,7 +34,7 @@ void dSVD(double* A, int m, int n, double* S, double* U, double* VT) {
     if (info > 0) throw std::runtime_error("SVD computation did not converge.");
 }
 
-void dpivotedQR(int m, int n, double* A, double* Q, double* R, int* jpvt)
+void dPivotedQR(int m, int n, double* A, double* Q, double* R, int* jpvt)
 {
     // Lapacke QR: dgeqp3
     int info;    
@@ -73,4 +73,29 @@ double verifyQR(int m, int n, double* Q, double* R, double* A, int* jpvt) {
     error = std::sqrt(error);
     //std::cout << "Reconstruction error ||QR - A||_F = " << error << std::endl;
     return error;
+}
+
+void dInterpolative_qr(double* M, int m, int n, int maxdim, double* C, double* Z)
+{
+    int max_rank = m <= n ? m : n;
+    int k = maxdim > max_rank ? max_rank : maxdim;
+    double* Q = new double[m * m];
+    double* R = new double[m * n]{0.0};
+    int* jpvt = new int[n];       // Pivot indices
+
+    dPivotedQR(m, n, M, Q, R, jpvt); 
+
+    // Slice R -> R_k
+    double* R_k = new double[k * k];
+    for (int i = 0; i < k; ++i)
+        for (int j = 0; j < k; ++j) {
+            R_k[i * k + j] = R[i * n + j];
+        }
+    
+    
+
+    delete[] Q;
+    delete[] R;
+    delete[] R_k;
+    return;
 }

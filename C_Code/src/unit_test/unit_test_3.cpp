@@ -1,6 +1,25 @@
 #include <gtest/gtest.h>
 #include "header.h"
 
+TEST(QRID_TEST, low_rank_synthetic1)
+{
+    int m = 10;   // Rows 
+    int n = 8;    // Cols
+    double* M = new double[m * n];
+    for (int i = 0; i < m; ++i)
+        for (int j = 0; j < n; ++j)
+            M[i * n + j] = i + j;
+    util::PrintMatWindow(M, m, n, {0,m-1}, {0, n-1});
+
+    double* C;
+    double* Z;
+    int maxdim = 2;
+    dInterpolative_QR(M, m, n, maxdim, C, Z);
+    
+
+    delete[] M;
+}
+
 TEST(TTSVD_TEST, Way3_TTSVD_dense1)
 {   
     tblis::tensor<double> T({2, 4, 3});
@@ -10,8 +29,9 @@ TEST(TTSVD_TEST, Way3_TTSVD_dense1)
             for (int k=0; k<3; ++k)
                 T(i,j,k) = i + j + k;    
 
-    auto factors = TT_SVD_dense(T, 5, 1E-5);
+    auto factors = TT_SVD_dense(T, 2, 1E-5);
     auto tensor = util::TT_Contraction_dense(factors);    
+
     // Find the maximum error between output C and the correct answer
     double max_error = 0.0;
     for (int i=0; i<2; ++i)
@@ -32,8 +52,8 @@ TEST(TTSVD_TEST, Way3_TTSVD_dense2)
                    T(i,j,k,l) = i * j + k - l;    
 
     auto factors = TT_SVD_dense(T, 10, 1E-10);
-    
-    auto tensor = util::TT_Contraction_dense(factors);    
+    auto tensor = util::TT_Contraction_dense(factors);
+        
     // Find the maximum error between output C and the correct answer
     double max_error = 0.0;
     for (int i=0; i<2; ++i)

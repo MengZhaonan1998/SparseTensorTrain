@@ -12,11 +12,11 @@
 #include <lapacke.h>
 #include <tblis/tblis.h>
 
-
 void fSVD(float* A, int m, int n, float* S, float* U, float* VT);
 void dSVD(double* A, int m, int n, double* S, double* U, double* VT);
-void dpivotedQR(int m, int n, double* A, double* Q, double* R, int* jpvt);
+void dPivotedQR(int m, int n, double* A, double* Q, double* R, int* jpvt);
 double verifyQR(int m, int n, double* Q, double* R, double* A, int* jpvt);
+void dInterpolative_QR(double* M, int m, int n, int maxdim, double* C, double* Z);
 
 std::vector<tblis::tensor<double>> TT_SVD_dense(tblis::tensor<double> tensor, int r_max, double eps);
 

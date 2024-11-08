@@ -49,7 +49,7 @@ TEST(LapackeTEST, QR_3by5)
     double* R = new double[m * n]{0.0};
     int* jpvt = new int[n];       // Pivot indices
 
-    dpivotedQR(m, n, A, Q, R, jpvt);
+    dPivotedQR(m, n, A, Q, R, jpvt);
 
     // Step 4: Verify that QR - A is near zero
     double error = verifyQR(m, n, Q, R, A_orig, jpvt);
@@ -75,7 +75,7 @@ TEST(LapackeTEST, QR_5by3)
     double* R = new double[m * n]{0.0};
     int* jpvt = new int[n];       // Pivot indices
 
-    dpivotedQR(m, n, A, Q, R, jpvt);
+    dPivotedQR(m, n, A, Q, R, jpvt);
 
     // Step 4: Verify that QR - A is near zero
     double error = verifyQR(m, n, Q, R, A_orig, jpvt);
