@@ -8,7 +8,8 @@
 #include <type_traits>
 #include <tuple>
 #include <random>
-
+#include <cmath>
+#include <algorithm>
 #include <lapacke.h>
 #include <tblis/tblis.h>
 
@@ -17,6 +18,7 @@ void dSVD(double* A, int m, int n, double* S, double* U, double* VT);
 void dPivotedQR(int m, int n, double* A, double* Q, double* R, int* jpvt);
 double verifyQR(int m, int n, double* Q, double* R, double* A, int* jpvt);
 void dInterpolative_QR(double* M, int m, int n, int maxdim, double* C, double* Z);
+void qr_decomp_mgs(double* M, int Nr, int Nc, double* Q, double* R);
 
 std::vector<tblis::tensor<double>> TT_SVD_dense(tblis::tensor<double> tensor, int r_max, double eps);
 

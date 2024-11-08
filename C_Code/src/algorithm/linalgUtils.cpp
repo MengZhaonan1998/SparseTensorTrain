@@ -75,6 +75,36 @@ double verifyQR(int m, int n, double* Q, double* R, double* A, int* jpvt) {
     return error;
 }
 
+void qr_decomp_mgs(double* M, int Nr, int Nc, double* Q, double* R) {
+    for (int j = 0; j < Nc; j++) {
+        // Compute the j-th column of Q
+        for (int i = 0; i < Nr; i++) {
+            Q[i * Nc + j] = M[i * Nc + j];
+        }
+
+        for (int i = 0; i < j; i++) {
+            double dot_product = 0.0;
+            for (int k = 0; k < Nr; k++) {
+                dot_product += Q[k * Nc + i] * Q[k * Nc + j];
+            }
+            R[i * Nc + j] = dot_product;
+            for (int k = 0; k < Nr; k++) {
+                Q[k * Nc + j] -= R[i * Nc + j] * Q[k * Nc + i];
+            }
+        }
+
+        double norm = 0.0;
+        for (int k = 0; k < Nr; k++) {
+            norm += Q[k * Nc + j] * Q[k * Nc + j];
+        }
+        norm = std::sqrt(norm);
+        R[j * Nc + j] = norm;
+        for (int k = 0; k < Nr; k++) {
+            Q[k * Nc + j] /= norm;
+        }
+    }
+}
+
 void dInterpolative_qr(double* M, int m, int n, int maxdim, double* C, double* Z)
 {
     int max_rank = m <= n ? m : n;
@@ -91,7 +121,7 @@ void dInterpolative_qr(double* M, int m, int n, int maxdim, double* C, double* Z
         for (int j = 0; j < k; ++j) {
             R_k[i * k + j] = R[i * n + j];
         }
-    
+    //.....TODO.....
     
 
     delete[] Q;
