@@ -1,6 +1,7 @@
 import numpy as np
 import time as tm
-from scipy.linalg import solve, qr, eigvals, svd
+import matplotlib.pyplot as plt
+from scipy.linalg import solve, qr, eigvals, svd, solve_triangular
 from typing import Tuple, Union, List
 
 # What we have so far...
@@ -8,6 +9,58 @@ from typing import Tuple, Union, List
 # interpolative_qr
 # interpolative_sqr
 # interpolative_nuclear
+
+def PivotedQR(X: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    # Array initialization
+    Xc = np.copy(X)
+    n, p = Xc.shape 
+    #t = min(n,p) 
+    R = np.zeros([p,p]) # Upper triangular R
+    Q = np.zeros([n,p]) # Orthogonal Q
+    P = np.arange(p)    # Permutation P
+    
+    # v_j = ||X[:,j]||^2, j=1,...,n
+    v = np.zeros(p)
+    for j in range(p):
+        v_j = Xc[:,j].T @ Xc[:,j]
+        v[j] = v_j
+    pk = np.argmax(v)   # Determine an index p1 such that v_p1 is maximal
+    
+    # Gram-Schmidt process
+    for k in range(p):
+        #if k == t:
+        #    break
+        
+        # SWAP X, v, P, R
+        Xc[:, [pk, k]] = Xc[:, [k, pk]]
+        v[[pk, k]] = v[[k, pk]]
+        P[[pk, k]] = P[[k, pk]]
+        if k > 0:
+            R[0:k,[pk,k]] = R[0:k,[k,pk]]        
+        
+        # Orthogonalization and R update
+        Q[:,k] = Xc[:,k] - Q[:,0:k] @ R[0:k, k]
+        R[k,k] = np.sqrt(Q[:,k].T @ Q[:,k])
+        Q[:,k] = Q[:,k] / R[k,k]
+        # Re-orthogonalization is needed? ...
+        R[k,k+1:p] = Q[:,k].T @ Xc[:,k+1:p]
+                
+        # Update v_j
+        for j in range(k+1, p):
+            v[j] = v[j] - R[k,j] * R[k,j]
+        # Determine an index p_k+1 >= k+1 such that v_p_k+1 is maximal
+        if k < p-1:
+            pk = k+1 + np.argmax(v[k+1:])
+            pass
+            
+    return Q, R, P
+
+def srrqr_tol(A: np.ndarray, f: float = 2.0, tol: float = 1e-5):
+    '''
+    TODO....    
+    '''
+    
+    return
 
 def prrldu(M_: np.ndarray, cutoff: float = 0.0, maxdim: int = np.iinfo(np.int32).max, mindim: int = 1) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[int], List[int], float]:
     """
@@ -132,7 +185,9 @@ def interpolative_qr(M, maxdim=None):
     if maxdim is None:
         maxdim = min(M.shape)
     k = maxdim
-    Q , R , P = qr(M, pivoting =True, mode ='economic', check_finite = False)
+    #Q , R , P = qr(M, pivoting =True, mode ='economic', check_finite = False)
+    Mc = np.copy(M)
+    Q , R , P = PivotedQR(Mc)
     R_k = R[:k, :k]
     cols = P[:k]
     C = M[:, cols]
@@ -270,13 +325,13 @@ def unit_test_3():
 
 def unit_test_4():
     print("Unit test 4 starts!")
-    m = 200
+    m = 250
     r = 150
-    n = 250
+    n = 300
     M = np.random.random((m,r)) @ np.random.random((r,n))
     cutoff = 1E-10
 
-    approx, C, Z = interpolative_sqr(M, 150)
+    approx, C, Z = interpolative_qr(M, 150)
     error = np.linalg.norm(M - approx, ord='fro') / np.linalg.norm(M, ord='fro')    
     
     ut_statement = "Test succeeds!" if error < cutoff else "Test fails!"
@@ -284,7 +339,22 @@ def unit_test_4():
     print("Unit test 4 ends!")
     return
 
+def pqr_test():
+    m = 4000
+    n = 5000
+    rank = 1000
+    A = np.random.random((m,rank))
+    B = np.random.random((rank,n))
+    M = A @ B
+    Mc = np.copy(M)
+    Q, R, P = PivotedQR(M)
+    max_err = np.max(Q @ R - Mc[:,P])    
+    print(max_err)    
+    return
+
 #unit_test_1()
 #unit_test_2()
-unit_test_3()
+#unit_test_3()
 #unit_test_4()
+pqr_test()
+

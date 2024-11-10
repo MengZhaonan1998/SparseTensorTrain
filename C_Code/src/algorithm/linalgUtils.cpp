@@ -105,6 +105,12 @@ void qr_decomp_mgs(double* M, int Nr, int Nc, double* Q, double* R) {
     }
 }
 
+void PivotedQR_MGS(double* M, int Nr, int Nc, double* Q, double* R)
+{
+    
+    return;
+}
+
 void dInterpolative_qr(double* M, int m, int n, int maxdim, double* C, double* Z)
 {
     int max_rank = m <= n ? m : n;

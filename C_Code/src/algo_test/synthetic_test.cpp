@@ -1,3 +1,4 @@
+
 #include "header.h"
 
 void synthetic_test_1()
@@ -20,8 +21,4 @@ int main(int argc, char** argv)
     std::cout << "Synthetic test ends!" << std::endl;
     return 0; 
 }
-
-
-
-
 
