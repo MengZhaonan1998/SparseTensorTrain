@@ -86,9 +86,9 @@ TEST(LapackeTEST, QR_5by3)
     delete[] jpvt;
 }
 
-TEST(ScratchTEST, QR_6by8)
+TEST(ScratchTEST, QR_8by6)
 {
-    int Nr = 6, Nc = 8;
+    int Nr = 8, Nc = 6;
     double* M = new double[Nr * Nc] {
         1.0, 2.0, 3.0, 4.4231, 5.0, -8.3, 7.0, 0.2,
         9.0, 10.0, -11.0, 12.0, 13.23, 14.0, 15.0, 16.0,
@@ -97,11 +97,21 @@ TEST(ScratchTEST, QR_6by8)
         -33.211, 34.0, 3.5732, 36.0, 37.0, 38.0, 39.4323, 40.0,
         39.33, 42.0, 43.0, -41.21, 45.0, 46.0, 47.167, 48.0
     };
-
+    /*
+    int Nr = 5, Nc = 4;
+    double* M = new double[Nr * Nc] {
+        1,9,3.7,-5,
+        10,5,-9.2,3,
+        -3.6,1.2, 23, 7,
+        32,-2,17.3,6,
+        7,-8,-4.2,7.6
+    };
+    */
     double* Q = new double[Nr * Nc]();
     double* R = new double[Nc * Nc]();
+    double* P = new double[Nc];
 
-    qr_decomp_mgs(M, Nr, Nc, Q, R);
+    dPivotedQR_MGS(M, Nr, Nc, Q, R, P);
 
     double max_error = 0.0;
     double ele = 0.0;

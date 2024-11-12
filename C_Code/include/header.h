@@ -10,15 +10,20 @@
 #include <random>
 #include <cmath>
 #include <algorithm>
+#include <cblas.h>
 #include <lapacke.h>
 #include <tblis/tblis.h>
 
+void blas_dcolumn_inner_products(const double* A, int m, int n, double* results);
 void fSVD(float* A, int m, int n, float* S, float* U, float* VT);
 void dSVD(double* A, int m, int n, double* S, double* U, double* VT);
 void dPivotedQR(int m, int n, double* A, double* Q, double* R, int* jpvt);
 double verifyQR(int m, int n, double* Q, double* R, double* A, int* jpvt);
 void dInterpolative_QR(double* M, int m, int n, int maxdim, double* C, double* Z);
+
 void qr_decomp_mgs(double* M, int Nr, int Nc, double* Q, double* R);
+void dPivotedQR_MGS(double* M, int Nr, int Nc, double* Q, double* R, double* P);
+
 
 std::vector<tblis::tensor<double>> TT_SVD_dense(tblis::tensor<double> tensor, int r_max, double eps);
 
@@ -85,6 +90,17 @@ void PrintMatWindow(T* matrix, size_t row, size_t col,
         }
         std::cout << "\n";
     }
+    return;
+}
+
+template<class T>
+void Print1DArray(T* array, size_t N) 
+{
+    std::cout << "[" << array[0];
+    for (size_t i = 1; i < N; ++i) {
+        std::cout << ", " << array[i];
+    }
+    std::cout << "]" << std::endl;
     return;
 }
 

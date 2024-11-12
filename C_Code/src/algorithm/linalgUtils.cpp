@@ -1,5 +1,14 @@
 #include "header.h"
 
+void blas_dcolumn_inner_products(const double* A, int m, int n, double* results) {
+    for (int i = 0; i < n; ++i) {
+        // Extract column i and compute its inner product with itself
+        double inner_product = cblas_ddot(m, &A[i], n, &A[i], n);
+        results[i] = inner_product;
+    }
+    return;
+}
+
 void fSVD(float* A, int m, int n, float* S, float* U, float* VT) {
     int lda = n;      // Leading dimension of A
     int ldu = m;      // Leading dimension of U
@@ -105,11 +114,79 @@ void qr_decomp_mgs(double* M, int Nr, int Nc, double* Q, double* R) {
     }
 }
 
-void PivotedQR_MGS(double* M, int Nr, int Nc, double* Q, double* R)
-{
-    
+void dPivotedQR_MGS(double* M, int Nr, int Nc, double* Q, double* R, double* P)
+{   
+    // v_j = ||X[:,j]||^2, j=1,...,n
+    double* v = new double[Nc]{0.0};
+    blas_dcolumn_inner_products(M, Nr, Nc, v);
+
+    // Determine an index p1 such that v_p1 is maximal
+    double* max_ptr_v = std::max_element(v, v + Nc);
+    int pk = std::distance(v, max_ptr_v);  
+
+    // Initialization of arrays
+    std::iota(P, P + Nc, 0);        // Fill the permutation array with 0, 1, 2, ..., Nc.
+    std::fill(Q, Q + Nc * Nr, 0.0); // Fill Q with zeros
+    std::fill(R, R + Nc * Nc, 0.0); // Fill R with zeros
+    //util::Print1DArray(v, Nc);
+
+    // Modified Gram-Schmidt Process (To be modified? MGS)
+    int rank = 0;
+    for (int k = 0; k < Nc; ++k) {
+        // Swap arrays: X, v, P, R 
+        cblas_dswap(Nr, M + pk, Nc, M + k, Nc); // Swap the pk-th and j-th column of M (To be optimized?)
+        cblas_dswap(1, v + pk, 1, v + k, 1);    
+        cblas_dswap(1, P + pk, 1, P + k, 1);
+        cblas_dswap(k, R + pk, Nc, R + k, Nc);    
+
+        // I can use blas but I write my own code here for future optimization
+        for (int i = 0; i < Nr; ++i) {
+            double temp = 0.0;
+            for (int j = 0; j < k; ++j) 
+                temp += Q[i * Nc + j] * R[j * Nc + k];
+            Q[i * Nc + k] = M[i * Nc + k] - temp;
+        }
+
+        double inner_prod = 0.0;
+        for (int i = 0; i < Nr; ++i) 
+            inner_prod += Q[i * Nc + k] * Q[i * Nc + k];
+        R[k * Nc + k] = std::sqrt(inner_prod);
+
+        for (int i = 0; i < Nr; ++i) 
+            Q[i * Nc + k] = Q[i * Nc + k] / R[k * Nc + k];
+
+        for (int i = k + 1; i < Nc; ++i) {
+            double temp = 0.0;
+            for (int j = 0; j < Nr; ++j) 
+                temp += Q[j * Nc + k] * M[j * Nc + i];
+            R[k * Nc + i] = temp;
+        }
+        
+        // Rank increment
+        rank += 1;    
+
+        // Update v_j
+        for (int j = k + 1; j < Nc; ++j) 
+            v[j] = v[j] - R[k * Nc + j] * R[k * Nc + j];
+
+        // Determine an index p1 such that v_p1 is maximal
+        max_ptr_v = std::max_element(v + k + 1, v + Nc);
+        pk = std::distance(v, max_ptr_v);  
+
+        // Rank revealing step
+        if (v[pk] < 1E-10) 
+            break;
+    }
+
+    delete[] v;
     return;
 }
+
+    //std::cout << "Iter:" << k << std::endl;
+    //std::cout << "Q:" << std::endl;
+    //util::PrintMatWindow(Q, Nr, Nc, {0,Nr-1}, {0,Nc-1});
+    //std::cout << "R:" << std::endl;
+    //util::PrintMatWindow(R, Nc, Nc, {0,Nc-1}, {0,Nc-1});
 
 void dInterpolative_qr(double* M, int m, int n, int maxdim, double* C, double* Z)
 {

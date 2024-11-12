@@ -27,6 +27,7 @@ def PivotedQR(X: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     pk = np.argmax(v)   # Determine an index p1 such that v_p1 is maximal
     
     # Gram-Schmidt process
+    rank = 0
     for k in range(p):
         #if k == t:
         #    break
@@ -44,6 +45,8 @@ def PivotedQR(X: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         Q[:,k] = Q[:,k] / R[k,k]
         # Re-orthogonalization is needed? ...
         R[k,k+1:p] = Q[:,k].T @ Xc[:,k+1:p]
+        
+        rank += 1 # Rank increment
                 
         # Update v_j
         for j in range(k+1, p):
@@ -52,8 +55,11 @@ def PivotedQR(X: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         if k < p-1:
             pk = k+1 + np.argmax(v[k+1:])
             pass
+        # If v_pk+1 is sufficiently small, leave k
+        if v[pk] < 1E-10:
+            break
             
-    return Q, R, P
+    return Q[:,0:rank], R[0:rank,:], P
 
 def srrqr_tol(A: np.ndarray, f: float = 2.0, tol: float = 1e-5):
     '''
@@ -340,16 +346,23 @@ def unit_test_4():
     return
 
 def pqr_test():
-    m = 4000
-    n = 5000
-    rank = 1000
+    m = 50
+    n = 40
+    rank = 30
     A = np.random.random((m,rank))
     B = np.random.random((rank,n))
     M = A @ B
+    
+    M = np.array([[1,9,3.7,-5],
+                  [10,5,-9.2,3],
+                  [-3.6,1.2, 23, 7],
+                  [32,-2,17.3,6],
+                  [7,-8,-4.2,7.6]])
+    
     Mc = np.copy(M)
     Q, R, P = PivotedQR(M)
     max_err = np.max(Q @ R - Mc[:,P])    
-    print(max_err)    
+    print(f"max error = {max_err}")    
     return
 
 #unit_test_1()
