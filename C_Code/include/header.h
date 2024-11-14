@@ -17,15 +17,15 @@
 void blas_dcolumn_inner_products(const double* A, int m, int n, double* results);
 void fSVD(float* A, int m, int n, float* S, float* U, float* VT);
 void dSVD(double* A, int m, int n, double* S, double* U, double* VT);
-void dPivotedQR(int m, int n, double* A, double* Q, double* R, int* jpvt);
+
+void dQR_MGS(double* M, int Nr, int Nc, double* Q, double* R);
 double verifyQR(int m, int n, double* Q, double* R, double* A, int* jpvt);
-void dInterpolative_QR(double* M, int m, int n, int maxdim, double* C, double* Z);
-
-void qr_decomp_mgs(double* M, int Nr, int Nc, double* Q, double* R);
-void dPivotedQR_MGS(double* M, int Nr, int Nc, double* Q, double* R, double* P);
-
+void dPivotedQR(int m, int n, double* A, double* Q, double* R, int* jpvt);
+void dPivotedQR_MGS(double* M, int Nr, int Nc, double* Q, double* R, int* P, int& rank);
+void dInterpolative_PivotedQR(double* A, int m, int n, int maxdim, double* C, double* Z, int& outdim);
 
 std::vector<tblis::tensor<double>> TT_SVD_dense(tblis::tensor<double> tensor, int r_max, double eps);
+std::vector<tblis::tensor<double>> TT_IDQR_dense_nocutoff(tblis::tensor<double> tensor, int r_max);
 
 namespace util
 {
@@ -101,6 +101,19 @@ void Print1DArray(T* array, size_t N)
         std::cout << ", " << array[i];
     }
     std::cout << "]" << std::endl;
+    return;
+}
+
+template<class T>
+void generateRandomArray(T* array, int size, T minValue, T maxValue) {
+    // Create a random number generator and distribution
+    std::random_device rd;  // Seed source
+    std::mt19937 gen(rd()); // Mersenne Twister engine
+    std::uniform_real_distribution<> dis(minValue, maxValue);
+    // Fill the vector with random numbers
+    for (int i = 0; i < size; ++i) {
+        array[i] = dis(gen);
+    }
     return;
 }
 

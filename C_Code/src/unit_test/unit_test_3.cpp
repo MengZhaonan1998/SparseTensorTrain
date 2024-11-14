@@ -13,8 +13,9 @@ TEST(QRID_TEST, low_rank_synthetic1)
 
     double* C;
     double* Z;
+    int rank;
     int maxdim = 2;
-    dInterpolative_QR(M, m, n, maxdim, C, Z);
+    dInterpolative_PivotedQR(M, m, n, maxdim, C, Z, rank);
     
 
     delete[] M;

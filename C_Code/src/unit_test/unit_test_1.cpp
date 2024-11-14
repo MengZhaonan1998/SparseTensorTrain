@@ -60,6 +60,34 @@ TEST(LapackeTEST, QR_3by5)
     delete[] jpvt;
 }
 
+TEST(BlasTest, UpperTriSolve_3by3)
+{
+    // Example upper triangular matrix U (3x3)
+    double U[9] = {
+        2.0, -1.0, 3.0,  // Row 0
+        0.0, 1.5, -2.0,  // Row 1 (upper triangular, lower part is zero)
+        0.0, 0.0, 1.0    // Row 2
+    };
+
+    // Right-hand side vector b
+    double b[3] = {5.0, 3.0, 4.0}; // This will be modified to hold the solution x
+
+    int n = 3; // Dimension of the system
+
+    // Solve Ux = b where U is an upper triangular matrix
+    cblas_dtrsv(CblasRowMajor, CblasUpper, CblasNoTrans, CblasNonUnit, n, U, n, b, 1);
+
+    // Correctness verification
+    double solution[3] = {5.0, 3.0, 4.0};    
+    for (int i = 0; i < n; ++i) {
+        double a = 0.0;
+        for (int j = 0; j < n; ++j) {
+            a += U[i * n + j] * b[j];
+        }
+        EXPECT_NEAR(a, solution[i], 1E-10);
+    }
+}
+
 TEST(LapackeTEST, QR_5by3)
 {
     // Define a 3x3 matrix A (row-major order)
@@ -86,9 +114,9 @@ TEST(LapackeTEST, QR_5by3)
     delete[] jpvt;
 }
 
-TEST(ScratchTEST, QR_8by6)
+TEST(ScratchTEST, QR_6by8)
 {
-    int Nr = 8, Nc = 6;
+    int Nr = 6, Nc = 8;
     double* M = new double[Nr * Nc] {
         1.0, 2.0, 3.0, 4.4231, 5.0, -8.3, 7.0, 0.2,
         9.0, 10.0, -11.0, 12.0, 13.23, 14.0, 15.0, 16.0,
@@ -97,34 +125,87 @@ TEST(ScratchTEST, QR_8by6)
         -33.211, 34.0, 3.5732, 36.0, 37.0, 38.0, 39.4323, 40.0,
         39.33, 42.0, 43.0, -41.21, 45.0, 46.0, 47.167, 48.0
     };
-    /*
-    int Nr = 5, Nc = 4;
-    double* M = new double[Nr * Nc] {
-        1,9,3.7,-5,
-        10,5,-9.2,3,
-        -3.6,1.2, 23, 7,
-        32,-2,17.3,6,
-        7,-8,-4.2,7.6
-    };
-    */
+
     double* Q = new double[Nr * Nc]();
     double* R = new double[Nc * Nc]();
-    double* P = new double[Nc];
+    int* P = new int[Nc];
+    int rank;
 
-    dPivotedQR_MGS(M, Nr, Nc, Q, R, P);
+    dPivotedQR_MGS(M, Nr, Nc, Q, R, P, rank);
 
     double max_error = 0.0;
     double ele = 0.0;
-    for (int i = 0; i < Nr; ++i)
+    for (int i = 0; i < Nr; ++i) {
         for (int j = 0; j < Nc; ++j) {
             ele = 0.0;
             for (int k = 0; k < Nc; ++k)
                 ele += Q[i * Nc + k] * R[k * Nc + j];
-            max_error = std::max(max_error, std::abs(ele - M[i * Nc + j]));
+            max_error = std::max(max_error, std::abs(ele - M[i * Nc + P[j]]));
         }
+    }
     EXPECT_NEAR(max_error, 0.0, 1E-10);
-
+    
     delete[] M;
     delete[] Q;
     delete[] R;
+}
+
+TEST(ScratchTest, IDQR_6by8)
+{
+    int Nr = 6, Nc = 8;
+    double* M = new double[Nr * Nc] {
+        1.0, 2.0, 3.0, 4.4231, 5.0, -8.3, 7.0, 0.2,
+        9.0, 10.0, -11.0, 12.0, 13.23, 14.0, 15.0, 16.0,
+        17.0, 18.232, 19.0, 20.0, 21.0, 22.432, 23.0, 24.0,
+        25.3, 26.0, 20.345, 28.0, -9.1, 30.0, 31.0, 32.0,
+        -33.211, 34.0, 3.5732, 36.0, 37.0, 38.0, 39.4323, 40.0,
+        39.33, 42.0, 43.0, -41.21, 45.0, 46.0, 47.167, 48.0
+    };
+
+    int maxdim = 100;
+    int outdim;
+    double* C = new double[Nr * maxdim];
+    double* Z = new double[maxdim * Nc];
+    dInterpolative_PivotedQR(M, Nr, Nc, maxdim, C, Z, outdim);
+
+    double* approx = new double[Nr * Nc]{0.0};
+    for (int i = 0; i < Nr; ++i)
+        for (int j = 0; j < Nc; ++j)
+            for (int l = 0; l < outdim; ++l)
+                approx[i * Nc + j] += C[i * outdim + l] * Z[l * Nc + j];
+
+    double max_error = 0.0;
+    for (int i = 0; i < Nr; ++i) 
+        for (int j = 0; j < Nc; ++j) 
+            max_error = std::max(max_error, std::abs(approx[i * Nc + j] - M[i * Nc + j]));
+        
+    EXPECT_NEAR(max_error, 0.0, 1E-10);
+    delete[] approx;
+}
+
+TEST(ScratchTest, IDQR_BadRandom)
+{
+    int Nr = 10, Nc = 200;
+    double* M = new double[Nr * Nc];
+    util::generateRandomArray(M, Nr * Nc, -1000.0, 1000.0);
+
+    int maxdim = 11;
+    int outdim;
+    double* C = new double[Nr * maxdim];
+    double* Z = new double[maxdim * Nc];
+    dInterpolative_PivotedQR(M, Nr, Nc, maxdim, C, Z, outdim);
+
+    double* approx = new double[Nr * Nc]{0.0};
+    for (int i = 0; i < Nr; ++i)
+        for (int j = 0; j < Nc; ++j)
+            for (int l = 0; l < outdim; ++l)
+                approx[i * Nc + j] += C[i * outdim + l] * Z[l * Nc + j];
+
+    double max_error = 0.0;
+    for (int i = 0; i < Nr; ++i) 
+        for (int j = 0; j < Nc; ++j) 
+            max_error = std::max(max_error, std::abs(approx[i * Nc + j] - M[i * Nc + j]));
+        
+    EXPECT_NEAR(max_error, 0.0, 1E-10);
+    delete[] approx;
 }

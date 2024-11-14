@@ -56,10 +56,10 @@ def PivotedQR(X: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
             pk = k+1 + np.argmax(v[k+1:])
             pass
         # If v_pk+1 is sufficiently small, leave k
-        if v[pk] < 1E-10:
+        if v[pk] < 1E-5:
             break
             
-    return Q[:,0:rank], R[0:rank,:], P
+    return Q[:,0:rank], R[0:rank,:], P, rank
 
 def srrqr_tol(A: np.ndarray, f: float = 2.0, tol: float = 1e-5):
     '''
@@ -187,13 +187,13 @@ def interpolative_prrldu(M: np.ndarray, cutoff: float = 0.0, maxdim: int = np.ii
     pivot_cols = [pc.index(i) for i in range(k)]  # Get pivot columns (convert from inverse permutation)
     return C, Z, pivot_cols, inf_error
 
-def interpolative_qr(M, maxdim=None):
-    if maxdim is None:
-        maxdim = min(M.shape)
+def interpolative_qr(M, maxdim):
     k = maxdim
     #Q , R , P = qr(M, pivoting =True, mode ='economic', check_finite = False)
     Mc = np.copy(M)
-    Q , R , P = PivotedQR(Mc)
+    Q , R , P, rank = PivotedQR(Mc)
+    if rank < k:
+        k = rank
     R_k = R[:k, :k]
     cols = P[:k]
     C = M[:, cols]
@@ -353,14 +353,15 @@ def pqr_test():
     B = np.random.random((rank,n))
     M = A @ B
     
-    M = np.array([[1,9,3.7,-5],
-                  [10,5,-9.2,3],
-                  [-3.6,1.2, 23, 7],
-                  [32,-2,17.3,6],
-                  [7,-8,-4.2,7.6]])
+    M = np.array([[1.0, 2.0, 3.0, 4.4231, 5.0, -8.3 ,7.0, 0.2],
+                  [9.0, 10.0, -11.0, 12.0, 13.23, 14.0, 15.0, 16.0],
+                  [17.0, 18.232, 19.0, 20.0, 21.0, 22.432, 23.0, 24.0],
+                  [25.3, 26.0, 20.345, 28.0, -9.1, 30.0, 31.0, 32.0],
+                  [-33.211, 34.0, 3.5732, 36.0, 37.0, 38.0, 39.4323, 40.0],
+                  [39.33, 42.0, 43.0, -41.21, 45.0, 46.0, 47.167, 48.0]])
     
     Mc = np.copy(M)
-    Q, R, P = PivotedQR(M)
+    Q, R, P, rank = PivotedQR(M)
     max_err = np.max(Q @ R - Mc[:,P])    
     print(f"max error = {max_err}")    
     return
