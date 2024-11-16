@@ -6,7 +6,7 @@ from typing import Tuple, Union, List
 
 # What we have so far...
 # interpolative_prrldu
-# interpolative_qr
+# interpolative_pqr
 # interpolative_sqr
 # interpolative_nuclear
 
@@ -25,7 +25,7 @@ def PivotedQR(X: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         v_j = Xc[:,j].T @ Xc[:,j]
         v[j] = v_j
     pk = np.argmax(v)   # Determine an index p1 such that v_p1 is maximal
-    
+    maxV = v[pk]
     # Gram-Schmidt process
     rank = 0
     for k in range(p):
@@ -56,10 +56,10 @@ def PivotedQR(X: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
             pk = k+1 + np.argmax(v[k+1:])
             pass
         # If v_pk+1 is sufficiently small, leave k
-        if v[pk] < 1E-5:
+        if v[pk] < 10:
             break
             
-    return Q[:,0:rank], R[0:rank,:], P, rank
+    return Q, R, P, rank
 
 def srrqr_tol(A: np.ndarray, f: float = 2.0, tol: float = 1e-5):
     '''
@@ -111,8 +111,7 @@ def prrldu(M_: np.ndarray, cutoff: float = 0.0, maxdim: int = np.iinfo(np.int32)
         M[:, [s, piv[1]]] = M[:, [piv[1], s]]
         
         if s < k - 1:
-            M[(s+1):, (s+1):] = M[(s+1):, (s+1):] - \
-                np.outer(M[(s+1):, s], M[s, (s+1):]) / M[s, s]
+            M[(s+1):, (s+1):] = M[(s+1):, (s+1):] - np.outer(M[(s+1):, s], M[s, (s+1):]) / M[s, s]
         
         rps[s], rps[piv[0]] = rps[piv[0]], rps[s]
         cps[s], cps[piv[1]] = cps[piv[1]], cps[s]
@@ -146,8 +145,7 @@ def prrldu(M_: np.ndarray, cutoff: float = 0.0, maxdim: int = np.iinfo(np.int32)
             piv_row = M[s, (s+1):]
             U[s, (s+1):] = piv_row / P
         if s < k - 1:
-            M[(s+1):, (s+1):] = M[(s+1):, (s+1):] - \
-                np.outer(piv_col, piv_row) / P
+            M[(s+1):, (s+1):] = M[(s+1):, (s+1):] - np.outer(piv_col, piv_row) / P
     
     L = L[:, :rank]
     d = d[:rank]
@@ -345,30 +343,69 @@ def unit_test_4():
     print("Unit test 4 ends!")
     return
 
-def pqr_test():
+def prrldu_test():
+    print("Unit test of partial rank-revealing LDU factorization starts!")
+    # Random rank-deficient test matrix
     m = 50
     n = 40
     rank = 30
-    A = np.random.random((m,rank))
-    B = np.random.random((rank,n))
+    min_val = 1
+    max_val = 100
+    A = np.random.uniform(min_val, max_val, (m,rank))
+    B = np.random.uniform(min_val, max_val, (rank,n))
+    M = A @ B
+
+    cutoff = 1e-8
+    maxdim = 50
+    mindim = 1    
+    L, d, U, row_perm_inv, col_perm_inv, inf_error = prrldu(M, cutoff, maxdim, mindim)
+    
+    recon = L @ np.diag(d) @ U
+    recon_recover_r = recon[row_perm_inv,:]
+    recon_recover_rc = recon_recover_r[:,col_perm_inv]
+    max_err = np.max(np.abs(recon_recover_rc - M))    
+    print(f"prrldu: revealed rank = {L.shape[1]}, max error = {max_err}")    
+    print("Unit test ends!")
+    return
+
+def pqr_test():
+    print("Unit test of pivoted QR factorization starts!")
+    # Random rank-deficient test matrix
+    m = 50
+    n = 40
+    rank = 30
+    min_val = 0
+    max_val = 100
+    A = np.random.uniform(min_val, max_val, (m,rank))
+    B = np.random.uniform(min_val, max_val, (rank,n))
     M = A @ B
     
+    # Performance of scipy.qr
+    Q1, R1, P1 = qr(M, overwrite_a=False, mode='economic', pivoting=True)
+    max_err = np.max(np.abs(Q1 @ R1 - M[:,P1]))
+    print(f"scipy.qr: revealed rank = {Q1.shape[1]}, max error = {max_err}")    
+    # Performance of my pivoted qr
+    Q, R, P, rank = PivotedQR(M)
+    max_err = np.max(np.abs(Q @ R - M[:,P]))    
+    print(f"my pivoted qr: revealed rank = {rank}, max error = {max_err}")    
+    print("Unit test ends!")
+    return
+
+'''========== Unit tests =========='''
+
+#unit_test_1()
+#unit_test_2()
+#unit_test_3()
+#unit_test_4()
+prrldu_test()
+pqr_test()   # Problem: QR decomposition -> error accumulation? 
+
+
+'''
     M = np.array([[1.0, 2.0, 3.0, 4.4231, 5.0, -8.3 ,7.0, 0.2],
                   [9.0, 10.0, -11.0, 12.0, 13.23, 14.0, 15.0, 16.0],
                   [17.0, 18.232, 19.0, 20.0, 21.0, 22.432, 23.0, 24.0],
                   [25.3, 26.0, 20.345, 28.0, -9.1, 30.0, 31.0, 32.0],
                   [-33.211, 34.0, 3.5732, 36.0, 37.0, 38.0, 39.4323, 40.0],
                   [39.33, 42.0, 43.0, -41.21, 45.0, 46.0, 47.167, 48.0]])
-    
-    Mc = np.copy(M)
-    Q, R, P, rank = PivotedQR(M)
-    max_err = np.max(Q @ R - Mc[:,P])    
-    print(f"max error = {max_err}")    
-    return
-
-#unit_test_1()
-#unit_test_2()
-#unit_test_3()
-#unit_test_4()
-pqr_test()
-
+'''
