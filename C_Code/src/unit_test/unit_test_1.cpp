@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
-#include "header.h"
+#include "new/core.h"
+#include "new/utils.h"
+#include "new/functions.h"
 
 TEST(LapackeTEST, SVD_2by2)
 {
@@ -212,6 +214,7 @@ TEST(ScratchTest, IDQR_BadRandom)
 
 TEST(ScratchTest, prrLDU_6by8)
 {
+    // Initialize the test matrix
     int Nr = 6, Nc = 8;
     double* M_ = new double[Nr * Nc] {
         1.0, 2.0, 3.0, 4.4231, 5.0, -8.3, 7.0, 0.2,
@@ -222,7 +225,87 @@ TEST(ScratchTest, prrLDU_6by8)
         39.33, 42.0, 43.0, -41.21, 45.0, 46.0, 47.167, 48.0
     };
 
+    // Partial rank revealing LDU decomposition
     float cutoff = 1e-8;
     int maxdim = 8, mindim = 6;
     auto lduResult = dPartialRRLDU(M_, Nr, Nc, cutoff, maxdim, mindim);
+    
+    // Reconstruction
+    // L * d * U = pivoted M
+    int rank = lduResult.rank;
+    double* reconM = new double[Nr * Nc]{0.0};
+    double* L = lduResult.L;
+    double* U = lduResult.U;
+    double* d = lduResult.d;
+    size_t* row_perm_inv = lduResult.row_perm_inv;
+    size_t* col_perm_inv = lduResult.col_perm_inv;
+    for (int i = 0; i < Nr; ++i) {
+        for (int j = 0; j < rank; ++j) 
+            L[i * rank + j] = L[i * rank + j] * d[j];
+        for (int j = 0; j < Nc; ++j)
+            for (int k = 0; k < rank; ++k)
+                reconM[i * Nc + j] += L[i * rank + k] * U[k * Nc + j];
+    }
+    // Reverse permutation
+    double max_error = 0.0;
+    for (int i = 0; i < Nr; ++i) 
+        for (int j = 0; j < Nc; ++j) {
+            double recover = reconM[row_perm_inv[i] * Nc + col_perm_inv[j]];
+            max_error = std::max(max_error, std::abs(recover - M_[i * Nc + j]));
+        }
+    EXPECT_NEAR(max_error, 0.0, 1e-10);
+
+    delete[] M_;
+    delete[] reconM;
+    lduResult.freeLduRes();
+}
+
+TEST(ScratchTest, prrLDU_Random)
+{
+    // Initialize random rank-deficient matrix M 
+    int Nr = 20, Nc = 15;
+    int trueRank = 11;
+    double* A = new double[Nr * trueRank];
+    double* B = new double[trueRank * Nc];
+    double* M = new double[Nr * Nc]{0.0};
+    util::generateRandomArray(A, Nr * trueRank, -100.0, 100.0);
+    util::generateRandomArray(B, trueRank * Nc, -100.0, 100.0);
+    for (int i = 0; i < Nr; ++i) 
+        for (int j = 0; j < Nc; ++j) 
+            for (int k = 0; k < trueRank; ++k)
+                M[i * Nc + j] += A[i * trueRank + k] * B[k * Nc + j];
+    
+    // Partial rank revealing LDU decomposition
+    float cutoff = 1e-10;
+    int maxdim = 15, mindim = 5;
+    auto lduResult = dPartialRRLDU(M, Nr, Nc, cutoff, maxdim, mindim);
+    
+    // Reconstruction
+    // L * d * U = pivoted M
+    int rank = lduResult.rank;
+    double* reconM = new double[Nr * Nc]{0.0};
+    double* L = lduResult.L;
+    double* U = lduResult.U;
+    double* d = lduResult.d;
+    size_t* row_perm_inv = lduResult.row_perm_inv;
+    size_t* col_perm_inv = lduResult.col_perm_inv;
+    for (int i = 0; i < Nr; ++i) {
+        for (int j = 0; j < rank; ++j) 
+            L[i * rank + j] = L[i * rank + j] * d[j];
+        for (int j = 0; j < Nc; ++j)
+            for (int k = 0; k < rank; ++k)
+                reconM[i * Nc + j] += L[i * rank + k] * U[k * Nc + j];
+    }
+    // Reverse permutation
+    double max_error = 0.0;
+    for (int i = 0; i < Nr; ++i) 
+        for (int j = 0; j < Nc; ++j) {
+            double recover = reconM[row_perm_inv[i] * Nc + col_perm_inv[j]];
+            max_error = std::max(max_error, std::abs(recover - M[i * Nc + j]));
+        }
+    EXPECT_NEAR(max_error, 0.0, 1e-8);
+
+    delete[] M;
+    delete[] reconM;
+    lduResult.freeLduRes();
 }

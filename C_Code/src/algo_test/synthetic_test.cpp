@@ -1,5 +1,6 @@
-
-#include "header.h"
+#include "new/core.h"
+#include "new/utils.h"
+#include "new/functions.h"
 
 void synthetic_test_1()
 {   std::cout << "Synthetic test 1 (dense TT, dense SVD) starts." << "\n";

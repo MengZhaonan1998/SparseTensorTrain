@@ -1,4 +1,6 @@
-#include "header.h"
+#include "new/core.h"
+#include "new/utils.h"
+#include "new/functions.h"
 
 std::vector<tblis::tensor<double>> TT_SVD_dense(tblis::tensor<double> tensor, int r_max, double eps)
 {    
