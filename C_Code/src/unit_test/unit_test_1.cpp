@@ -209,3 +209,20 @@ TEST(ScratchTest, IDQR_BadRandom)
     EXPECT_NEAR(max_error, 0.0, 1E-10);
     delete[] approx;
 }
+
+TEST(ScratchTest, prrLDU_6by8)
+{
+    int Nr = 6, Nc = 8;
+    double* M_ = new double[Nr * Nc] {
+        1.0, 2.0, 3.0, 4.4231, 5.0, -8.3, 7.0, 0.2,
+        9.0, 10.0, -11.0, 12.0, 13.23, 14.0, 15.0, 16.0,
+        17.0, 18.232, 19.0, 20.0, 21.0, 22.432, 23.0, 24.0,
+        25.3, 26.0, 20.345, 28.0, -9.1, 30.0, 31.0, 32.0,
+        -33.211, 34.0, 3.5732, 36.0, 37.0, 38.0, 39.4323, 40.0,
+        39.33, 42.0, 43.0, -41.21, 45.0, 46.0, 47.167, 48.0
+    };
+
+    float cutoff = 1e-8;
+    int maxdim = 8, mindim = 6;
+    auto lduResult = dPartialRRLDU(M_, Nr, Nc, cutoff, maxdim, mindim);
+}

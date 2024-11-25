@@ -183,7 +183,7 @@ def interpolative_prrldu(M: np.ndarray, cutoff: float = 0.0, maxdim: int = np.ii
     C = CIj[pr, :]   # Apply row permutation to get C
     Z = ZjJ[:, pc]   # Apply column permutation to get Z
     pivot_cols = [pc.index(i) for i in range(k)]  # Get pivot columns (convert from inverse permutation)
-    return C, Z, pivot_cols, inf_error
+    return C, Z,  pivot_cols, inf_error
 
 def interpolative_qr(M, maxdim):
     k = maxdim
@@ -397,15 +397,20 @@ def pqr_test():
 #unit_test_2()
 #unit_test_3()
 #unit_test_4()
-prrldu_test()
-pqr_test()   # Problem: QR decomposition -> error accumulation? 
+
+#prrldu_test()
+#pqr_test()   # Problem: QR decomposition -> error accumulation? 
 
 
-'''
-    M = np.array([[1.0, 2.0, 3.0, 4.4231, 5.0, -8.3 ,7.0, 0.2],
-                  [9.0, 10.0, -11.0, 12.0, 13.23, 14.0, 15.0, 16.0],
-                  [17.0, 18.232, 19.0, 20.0, 21.0, 22.432, 23.0, 24.0],
-                  [25.3, 26.0, 20.345, 28.0, -9.1, 30.0, 31.0, 32.0],
-                  [-33.211, 34.0, 3.5732, 36.0, 37.0, 38.0, 39.4323, 40.0],
-                  [39.33, 42.0, 43.0, -41.21, 45.0, 46.0, 47.167, 48.0]])
-'''
+
+M_ = np.array([[1.0, 2.0, 3.0, 4.4231, 5.0, -8.3 ,7.0, 0.2],
+              [9.0, 10.0, -11.0, 12.0, 13.23, 14.0, 15.0, 16.0],
+              [17.0, 18.232, 19.0, 20.0, 21.0, 22.432, 23.0, 24.0],
+              [25.3, 26.0, 20.345, 28.0, -9.1, 30.0, 31.0, 32.0],
+              [-33.211, 34.0, 3.5732, 36.0, 37.0, 38.0, 39.4323, 40.0],
+              [39.33, 42.0, 43.0, -41.21, 45.0, 46.0, 47.167, 48.0]])
+
+cutoff = 1e-8
+maxdim = 8
+mindim = 6
+L, d, U, row_perm_inv, col_perm_inv, inf_error = prrldu(M_, cutoff, maxdim, mindim)

@@ -8,11 +8,17 @@
 #include <type_traits>
 #include <tuple>
 #include <random>
+#include <cassert>
 #include <cmath>
 #include <algorithm>
 #include <cblas.h>
 #include <lapacke.h>
 #include <tblis/tblis.h>
+
+#include "struct.h"
+
+// Use (void) to silence unused warnings.
+#define assertm(exp, msg) assert(((void)msg, exp))
 
 void blas_dcolumn_inner_products(const double* A, int m, int n, double* results);
 void fSVD(float* A, int m, int n, float* S, float* U, float* VT);
@@ -24,8 +30,15 @@ void dPivotedQR(int m, int n, double* A, double* Q, double* R, int* jpvt);
 void dPivotedQR_MGS(double* M, int Nr, int Nc, double* Q, double* R, int* P, int& rank);
 void dInterpolative_PivotedQR(double* A, int m, int n, int maxdim, double* C, double* Z, int& outdim);
 
-std::vector<tblis::tensor<double>> TT_SVD_dense(tblis::tensor<double> tensor, int r_max, double eps);
-std::vector<tblis::tensor<double>> TT_IDQR_dense_nocutoff(tblis::tensor<double> tensor, int r_max);
+std::vector<tblis::tensor<double>> 
+TT_SVD_dense(tblis::tensor<double> tensor, int r_max, double eps);
+
+std::vector<tblis::tensor<double>> 
+TT_IDQR_dense_nocutoff(tblis::tensor<double> tensor, int r_max);
+
+decompRes::PrrlduRes<double> 
+dPartialRRLDU(double* M_, size_t Nr, size_t Nc,
+              double cutoff, size_t maxdim, size_t mindim);
 
 namespace util
 {
