@@ -7,12 +7,22 @@
 namespace decompRes {
     template<class T>
     struct PrrlduRes {
-        T* L;
-        T* d;
-        T* U;
-        size_t* row_perm_inv;
-        size_t* col_perm_inv;
+        T* L = nullptr;
+        T* d = nullptr;
+        T* U = nullptr;
+        size_t rank;
+        size_t* row_perm_inv = nullptr;
+        size_t* col_perm_inv = nullptr;
         T inf_error;
+        
+        // Memory release
+        void freeLduRes() {
+            if (L != nullptr) delete[] L;
+            if (d != nullptr) delete[] d;
+            if (U != nullptr) delete[] U;
+            if (row_perm_inv != nullptr) delete[] row_perm_inv;
+            if (col_perm_inv != nullptr) delete[] col_perm_inv;
+        };
     };
 }
 
