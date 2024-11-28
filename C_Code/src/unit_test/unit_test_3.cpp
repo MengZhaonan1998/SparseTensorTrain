@@ -3,6 +3,7 @@
 #include "new/utils.h"
 #include "new/functions.h"
 
+/*
 TEST(QRID_TEST, low_rank_synthetic1)
 {
     int m = 10;   // Rows 
@@ -19,8 +20,84 @@ TEST(QRID_TEST, low_rank_synthetic1)
     int maxdim = 2;
     dInterpolative_PivotedQR(M, m, n, maxdim, C, Z, rank);
     
+    delete[] M;
+}
+*/
+
+TEST(PRRLDU_ID, DenseMat6by8)
+{
+    // Initialize the test matrix
+    size_t Nr = 6, Nc = 8;
+    double* M = new double[Nr * Nc] {
+        1.0, 2.0, 3.0, 4.4231, 5.0, -8.3, 7.0, 0.2,
+        9.0, 10.0, -11.0, 12.0, 13.23, 14.0, 15.0, 16.0,
+        17.0, 18.232, 19.0, 20.0, 21.0, 22.432, 23.0, 24.0,
+        25.3, 26.0, 20.345, 28.0, -9.1, 30.0, 31.0, 32.0,
+        -33.211, 34.0, 3.5732, 36.0, 37.0, 38.0, 39.4323, 40.0,
+        39.33, 42.0, 43.0, -41.21, 45.0, 46.0, 47.167, 48.0
+    };
+
+    // Interpolative decomposition based on partial rank revealing LDU decomposition
+    float cutoff = 1e-8;
+    size_t maxdim = 8, outdim;
+    double* C = new double[Nr * maxdim]{0.0};
+    double* Z = new double[maxdim * Nc]{0.0};
+    dInterpolative_PrrLDU(M, Nr, Nc, maxdim, cutoff, C, Z, outdim);
+
+    // Verification
+    double max_error = 0.0;
+    for (size_t i = 0; i < Nr; ++i)
+        for (size_t j = 0; j < Nc; ++j) {
+            double temp = 0.0;
+            for (size_t k = 0; k < outdim; ++k)
+                temp += C[i * outdim + k] * Z[k * Nc + j];
+            max_error = std::max(max_error, std::abs(temp - M[i * Nc + j]));
+        }
+
+    EXPECT_NEAR(max_error, 0.0, 1e-10);
 
     delete[] M;
+    delete[] C;
+    delete[] Z;
+}
+
+TEST(PRRLDU_ID, Random)
+{
+// Initialize random rank-deficient matrix M 
+    int Nr = 20, Nc = 15;
+    int trueRank = 11;
+    double* A = new double[Nr * trueRank];
+    double* B = new double[trueRank * Nc];
+    double* M = new double[Nr * Nc]{0.0};
+    util::generateRandomArray(A, Nr * trueRank, -100.0, 100.0);
+    util::generateRandomArray(B, trueRank * Nc, -100.0, 100.0);
+    for (int i = 0; i < Nr; ++i) 
+        for (int j = 0; j < Nc; ++j) 
+            for (int k = 0; k < trueRank; ++k)
+                M[i * Nc + j] += A[i * trueRank + k] * B[k * Nc + j];
+    
+    // Interpolative decomposition based on partial rank revealing LDU decomposition
+    float cutoff = 1e-8;
+    size_t maxdim = 15, outdim;
+    double* C = new double[Nr * maxdim]{0.0};
+    double* Z = new double[maxdim * Nc]{0.0};
+    dInterpolative_PrrLDU(M, Nr, Nc, maxdim, cutoff, C, Z, outdim);
+
+    // Verification
+    double max_error = 0.0;
+    for (size_t i = 0; i < Nr; ++i)
+        for (size_t j = 0; j < Nc; ++j) {
+            double temp = 0.0;
+            for (size_t k = 0; k < outdim; ++k)
+                temp += C[i * outdim + k] * Z[k * Nc + j];
+            max_error = std::max(max_error, std::abs(temp - M[i * Nc + j]));
+        }
+
+    EXPECT_NEAR(max_error, 0.0, 1e-10);
+
+    delete[] M;
+    delete[] C;
+    delete[] Z;
 }
 
 TEST(TTSVD_TEST, Way3_TTSVD_dense1)

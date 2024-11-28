@@ -1,5 +1,5 @@
 #include "new/core.h"
-#include "new/utils.h"
+//#include "new/utils.h"
 #include "new/functions.h"
 
 void dQR_MGS(double* M, int Nr, int Nc, double* Q, double* R) {
@@ -106,57 +106,6 @@ void dPivotedQR_MGS(double* A, int Nr, int Nc, double* Q, double* R, int* P, int
     delete[] v;
     delete[] M;
     return;
-}
-
-// Interpolative decomposition by pivoted QR
-void dInterpolative_PivotedQR(double* M, int m, int n, int maxdim, 
-                              double* C, double* Z, int& outdim)
-{
-    // Get CZ rank k
-    int k = maxdim;
-    
-    // Pivoted (rank-revealing) QR decomposition
-    double* Q = new double[m * n]{0.0};
-    double* R = new double[n * n]{0.0};
-    int* P = new int[n];
-    int rank;
-    dPivotedQR_MGS(M, m, n, Q, R, P, rank);
-    k = k < rank ? k : rank;
-    outdim = k;
-
-    // R_k = R[0:k,0:k] (To be optimized)
-    double* R_k = new double[k * k];
-    for (int i = 0; i < k; ++i)
-        for (int j = 0; j < k; ++j) 
-            R_k[i * k + j] = R[i * n + j];
-    
-    // C = M[:, cols]     TOBECONTINUED... Rank stuff...
-    for (int i = 0; i < m; ++i)
-        for (int j = 0; j < k; ++j)
-            C[i * k + j] = M[i * n + P[j]];
-
-    // Solve linear systems for Z: (R_k^T * R_k) Z = C^T * M
-    double* b = new double[k];
-    for (int i = 0; i < n; ++i) {
-        // Construct right hand side b = C^T * M[:,i]
-        std::fill(b, b + k, 0.0);
-        for (int j = 0; j < k; ++j) 
-            for (int l = 0; l < m; ++l) 
-                b[j] += C[l * k + j] * M[l * n + i];
-        // Solve two triangular systems R_k/R_k^T
-        cblas_dtrsv(CblasRowMajor, CblasUpper, CblasTrans, CblasNonUnit, k, R_k, k, b, 1);
-        cblas_dtrsv(CblasRowMajor, CblasUpper, CblasNoTrans, CblasNonUnit, k, R_k, k, b, 1);  
-        // Copy solution to Z
-        for (int j = 0; j < k; ++j) 
-            Z[j * n + i] = b[j];
-    }
-
-    delete[] Q;
-    delete[] R;
-    delete[] P;
-    delete[] R_k;
-    delete[] b;
-    return;        
 }
 
 decompRes::PrrlduRes<double> 

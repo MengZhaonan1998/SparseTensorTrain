@@ -25,18 +25,21 @@ set(SOURCES_1
     src/algo_test/synthetic_test.cpp
     src/algorithm/tensortrain.cpp
     src/algorithm/linalgUtils.cpp
-    src/algorithm/decomposition.cpp)
+    src/algorithm/decomposition.cpp
+    src/algorithm/interpolative.cpp)
 
 set(SOURCES_2
     src/algo_test/frostt_test.cpp
     src/algorithm/tensortrain.cpp
     src/algorithm/linalgUtils.cpp
-    src/algorithm/decomposition.cpp)
+    src/algorithm/decomposition.cpp
+    src/algorithm/interpolative.cpp)
 
 set(SOURCES_3
     src/unit_test/unit_test_1.cpp
     src/algorithm/linalgUtils.cpp
-    src/algorithm/decomposition.cpp)
+    src/algorithm/decomposition.cpp
+    src/algorithm/interpolative.cpp)
 
 set(SOURCES_4
     src/unit_test/unit_test_2.cpp
@@ -46,7 +49,8 @@ set(SOURCES_5
     src/unit_test/unit_test_3.cpp
     src/algorithm/tensortrain.cpp
     src/algorithm/linalgUtils.cpp
-    src/algorithm/decomposition.cpp)
+    src/algorithm/decomposition.cpp
+    src/algorithm/interpolative.cpp)
 
 add_executable(synthetic_test ${SOURCES_1})
 add_executable(frostt_test ${SOURCES_2})
@@ -76,3 +80,8 @@ add_executable(unit_test_3 ${SOURCES_5})
 target_link_libraries(unit_test_1 PRIVATE gtest_main LAPACK::LAPACK ${LAPACKE_LIB} BLAS::BLAS ${TBLIS_LIB})
 target_link_libraries(unit_test_2 PRIVATE gtest_main LAPACK::LAPACK ${LAPACKE_LIB} BLAS::BLAS ${TBLIS_LIB})
 target_link_libraries(unit_test_3 PRIVATE gtest_main LAPACK::LAPACK ${LAPACKE_LIB} BLAS::BLAS ${TBLIS_LIB})
+
+# Output unit-test executable to unit_test/
+set_target_properties(unit_test_1 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/unit_test)
+set_target_properties(unit_test_2 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/unit_test)
+set_target_properties(unit_test_3 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/unit_test)
