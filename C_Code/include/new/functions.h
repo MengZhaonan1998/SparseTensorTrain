@@ -29,6 +29,6 @@ void dInterpolative_PrrLDU(double* M, size_t Nr, size_t Nc, size_t maxdim, doubl
 // Tensor decomposition functions
 std::vector<tblis::tensor<double>> TT_SVD_dense(tblis::tensor<double> tensor, int r_max, double eps);
 std::vector<tblis::tensor<double>> TT_IDQR_dense_nocutoff(tblis::tensor<double> tensor, int r_max);
-std::vector<tblis::tensor<double>> TT_PRRLDU_dense(tblis::tensor<double> tensor, int r_max, double eps);
+std::vector<tblis::tensor<double>> TT_IDPRRLDU_dense(tblis::tensor<double> tensor, int r_max, double eps);
 
 #endif // TENSOR_DECOMPOSITION_H

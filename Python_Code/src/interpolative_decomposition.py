@@ -402,8 +402,7 @@ def pqr_test():
 #pqr_test()   # Problem: QR decomposition -> error accumulation? 
 
 
-
-M_ = np.array([[1.0, 2.0, 3.0, 4.4231, 5.0, -8.3 ,7.0, 0.2],
+M = np.array([[1.0, 2.0, 3.0, 4.4231, 5.0, -8.3 ,7.0, 0.2],
               [9.0, 10.0, -11.0, 12.0, 13.23, 14.0, 15.0, 16.0],
               [17.0, 18.232, 19.0, 20.0, 21.0, 22.432, 23.0, 24.0],
               [25.3, 26.0, 20.345, 28.0, -9.1, 30.0, 31.0, 32.0],
@@ -412,5 +411,4 @@ M_ = np.array([[1.0, 2.0, 3.0, 4.4231, 5.0, -8.3 ,7.0, 0.2],
 
 cutoff = 1e-8
 maxdim = 8
-mindim = 6
-L, d, U, row_perm_inv, col_perm_inv, inf_error = prrldu(M_, cutoff, maxdim, mindim)
+C, Z, pivot_cols, inf_error = interpolative_prrldu(M, cutoff, maxdim)

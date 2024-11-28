@@ -22,18 +22,18 @@ find_library(TBLIS_LIB tblis REQUIRED)
 
 # Define sources
 set(SOURCES_1
-    src/algo_test/synthetic_test.cpp
+    src/synthetic_test/dense_test.cpp
     src/algorithm/tensortrain.cpp
     src/algorithm/linalgUtils.cpp
     src/algorithm/decomposition.cpp
     src/algorithm/interpolative.cpp)
 
-set(SOURCES_2
-    src/algo_test/frostt_test.cpp
-    src/algorithm/tensortrain.cpp
-    src/algorithm/linalgUtils.cpp
-    src/algorithm/decomposition.cpp
-    src/algorithm/interpolative.cpp)
+#set(SOURCES_2
+#    src/algo_test/frostt_test.cpp
+#    src/algorithm/tensortrain.cpp
+#    src/algorithm/linalgUtils.cpp
+#    src/algorithm/decomposition.cpp
+#    src/algorithm/interpolative.cpp)
 
 set(SOURCES_3
     src/unit_test/unit_test_1.cpp
@@ -52,11 +52,11 @@ set(SOURCES_5
     src/algorithm/decomposition.cpp
     src/algorithm/interpolative.cpp)
 
-add_executable(synthetic_test ${SOURCES_1})
-add_executable(frostt_test ${SOURCES_2})
+add_executable(synthetic_dense_test ${SOURCES_1})
+#add_executable(frostt_test ${SOURCES_2})
 
-target_link_libraries(synthetic_test PRIVATE LAPACK::LAPACK ${LAPACKE_LIB} BLAS::BLAS ${TBLIS_LIB})
-target_link_libraries(frostt_test PRIVATE LAPACK::LAPACK ${LAPACKE_LIB} BLAS::BLAS ${TBLIS_LIB})
+target_link_libraries(synthetic_dense_test PRIVATE LAPACK::LAPACK ${LAPACKE_LIB} BLAS::BLAS ${TBLIS_LIB})
+#target_link_libraries(frostt_test PRIVATE LAPACK::LAPACK ${LAPACKE_LIB} BLAS::BLAS ${TBLIS_LIB})
 
 # Google Test setup
 # If Google Test is not installed, download and build it

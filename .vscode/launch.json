@@ -5,7 +5,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/unit_test/unit_test_3",  // Path to your built executable
+            "program": "${workspaceFolder}/build/synthetic_dense_test",  // Path to your built executable
             "args": [], // Pass any command-line arguments here
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
