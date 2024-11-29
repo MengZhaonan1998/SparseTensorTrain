@@ -8,11 +8,14 @@ enum dense_tt_id {
     TTID_RRQR = 3
 };
 
-void SyntheticDenseTest(std::initializer_list<int> tShape, std::initializer_list<int> tRank, 
-                        dense_tt_id ttalgoType)
+void DenseSyntheticT_DenseTest(std::initializer_list<int> tShape, std::initializer_list<int> tRank, 
+                               dense_tt_id ttalgoType)
 {
-    std::cout << "Synthetic dense test starts.\n"; 
-    
+    std::cout << "Dense TT test of a synthetic dense tensor starts.\n"; 
+    auto start = std::chrono::high_resolution_clock::now();
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed;
+
     // Generate a synthetic dense tensor {tShape} (TT rank = {tRank})
     auto synTensor = util::SyntheticTenGen<double>(tShape, tRank);
 
@@ -23,13 +26,19 @@ void SyntheticDenseTest(std::initializer_list<int> tShape, std::initializer_list
     switch (ttalgoType) {
     case TTSVD:
         std::cout << "TT-SVD starts\n";
+        start = std::chrono::high_resolution_clock::now();
         ttList = TT_SVD_dense(synTensor, maxdim, cutoff);
-        std::cout << "TT-SVD ends.\n";
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = end - start;
+        std::cout << "TT-SVD ends. It took " << elapsed.count() << " seconds.\n";
         break;
     case TTID_PRRLDU:
         std::cout << "TT-ID-PRRLDU starts\n";
+        start = std::chrono::high_resolution_clock::now();
         ttList = TT_IDPRRLDU_dense(synTensor, maxdim, cutoff);
-        std::cout << "TT-ID-PRRLDU ends.\n";
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = end - start;
+        std::cout << "TT-ID-PRRLDU ends. It took " << elapsed.count() << " seconds.\n";
         break;
     case TTID_RRQR:
         std::cout << "...TDID_RRQR is to be debugged...\n";
@@ -40,6 +49,70 @@ void SyntheticDenseTest(std::initializer_list<int> tShape, std::initializer_list
     }   
 
     // Reconstruction evaluation
+    auto recTensor = util::TT_Contraction_dense(ttList);
+    double error = util::NormError(synTensor, recTensor, 2, true);
+    std::cout << "TT recon error: " << error << "\n";
+    std::cout << "Test ends." << std::endl;
+}
+
+void SparseSyntheticT_DenseTest(std::initializer_list<int> tShape, std::initializer_list<int> tRank, 
+                                std::initializer_list<double> tDensity, dense_tt_id ttalgoType)
+{
+    std::cout << "Dense TT test of a synthetic sparse tensor starts.\n"; 
+    auto start = std::chrono::high_resolution_clock::now();
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed;
+
+    // Generate a synthetic sparse tensor {tShape} (TT rank = {tRank})
+    auto synTensor = util::SyntheticSparseTenGen<double>(tShape, tRank, tDensity);
+    int nnz = 0;
+    int nbar = util::GetSize(synTensor);
+    for (int i = 0; i < nbar; i++) {
+        if (std::abs(synTensor.data()[i]) > 1e-10)
+            nnz += 1;
+    }
+    std::cout << "Synthetic tensor info: nnz = " << nnz << ", density = " << double(nnz) / double(nbar) << "\n";
+
+    // Tensor train decomposition
+    int maxdim = std::max(tRank);
+    double cutoff = 1E-10; 
+    std::vector<tblis::tensor<double>> ttList;
+    switch (ttalgoType) {
+    case TTSVD:
+        std::cout << "TT-SVD starts\n";
+        start = std::chrono::high_resolution_clock::now();
+        ttList = TT_SVD_dense(synTensor, maxdim, cutoff);
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = end - start;
+        std::cout << "TT-SVD ends. It took " << elapsed.count() << " seconds.\n";
+        break;
+    case TTID_PRRLDU:
+        std::cout << "TT-ID-PRRLDU starts\n";
+        start = std::chrono::high_resolution_clock::now();
+        ttList = TT_IDPRRLDU_dense(synTensor, maxdim, cutoff);
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = end - start;
+        std::cout << "TT-ID-PRRLDU ends. It took " << elapsed.count() << " seconds.\n";
+        break;
+    case TTID_RRQR:
+        std::cout << "...TDID_RRQR is to be debugged...\n";
+        break;
+    default:
+        std::cout << "Please give a correct no. of TT algorithm types.\n";
+        break;
+    }   
+
+    // Reconstruction evaluation
+    std::cout << "Tensor factor info:\n";
+    for (int f = 0; f < tShape.size(); ++f) {
+        int factor_nnz = 0;
+        int factor_nbar = util::GetSize(ttList[f]);
+        for (int i = 0; i < factor_nbar; ++i) {
+        if (std::abs(ttList[f].data()[i]) > 1e-10)
+            factor_nnz += 1;
+        }
+        std::cout << "factor " << f << ": nnz = " << factor_nnz << ", density = " << double(factor_nnz) / double(factor_nbar) << "\n";
+    }
     auto recTensor = util::TT_Contraction_dense(ttList);
     double error = util::NormError(synTensor, recTensor, 2, true);
     std::cout << "TT recon error: " << error << "\n";
@@ -67,8 +140,6 @@ void toy_test()
 
 int main(int argc, char** argv) 
 {
-    SyntheticDenseTest({20, 30, 30, 10}, {13, 20, 7}, TTID_PRRLDU);
+    SparseSyntheticT_DenseTest({20, 30, 30, 10}, {10, 30, 8}, {0.05, 0.05, 0.05, 0.05}, TTID_PRRLDU);
     return 0; 
 }
-
-

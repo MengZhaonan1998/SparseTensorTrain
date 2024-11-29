@@ -172,6 +172,57 @@ tblis::tensor<T> SyntheticTenGen(std::initializer_list<int> tShape, std::initial
 }
 
 template<class T>
+tblis::tensor<T> SyntheticSparseTenGen(std::initializer_list<int> tShape, std::initializer_list<int> tRank,
+                                       std::initializer_list<double> tDensity)
+{
+    if (tRank.size() != tShape.size() - 1) 
+        throw std::invalid_argument("Invalid input tShape or tRank!");
+    if (tShape.size() != tDensity.size())
+        throw std::invalid_argument("Invalid input tShape or density!");
+    
+    std::vector<int> vec_tShape = tShape;
+    std::vector<int> vec_tRank = tRank;
+    std::vector<double> vec_density = tDensity;
+    vec_tRank.push_back(1);
+    vec_tRank.insert(vec_tRank.begin(), 1);
+    int dim = vec_tShape.size();
+    std::vector<tblis::tensor<T>> ttList;
+    
+    // Tensor train generation
+    for (int i = 0; i < dim; ++i) {
+        int n = vec_tRank[i] * vec_tShape[i] * vec_tRank[i+1];
+        tblis::tensor<T> factor({vec_tRank[i], vec_tShape[i], vec_tRank[i+1]});
+        if (i == 0) { 
+            factor.resize({vec_tShape[i], vec_tRank[i+1]}); }
+        else if (i == dim - 1) { 
+            factor.resize({vec_tRank[i], vec_tShape[i]}); }
+        
+        // Generate the random data for the tensor factor
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<T> dis(-10,10);           
+        std::uniform_real_distribution<double> dist(0.0, 1.0);   
+        double density = vec_density[i];
+        double spThres;
+        T* randSeq = new T[n];
+        for (int i = 0; i < n; ++i) {
+            spThres = dist(gen);
+            if (spThres < density) {
+                randSeq[i] = dis(gen);
+            } else {
+                randSeq[i] = 0.0;
+            }
+        }        
+        std::copy(randSeq, randSeq + n, factor.data());       
+        ttList.push_back(factor);
+        delete[] randSeq;    
+    }
+    // TT contraction -> Synthetic output tensor
+    auto synTensor = util::TT_Contraction_dense(ttList);
+    return synTensor;
+}
+
+template<class T>
 double NormError(tblis::tensor<T> tensorA, tblis::tensor<T> tensorB, int mode, bool relative)
 {
     size_t N = GetSize(tensorA);
