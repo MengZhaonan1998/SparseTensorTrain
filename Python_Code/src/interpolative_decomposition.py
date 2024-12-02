@@ -185,8 +185,14 @@ def interpolative_prrldu(M: np.ndarray, cutoff: float = 0.0, maxdim: int = np.ii
 
 def interpolative_plu(M: np.ndarray, maxdim: int = np.iinfo(np.int32).max, mindim: int = 1):
     P, L, U = lu(M)
-    
-    return 
+    k = L.shape[1]
+    U11 = U[:, :k]  # Extract relevant submatrices
+    iU11 = np.linalg.solve(U11, np.eye(U.shape[0])) # Compute inverse of U11 through backsolving
+    ZjJ = iU11 @ U  # Compute interpolation matrix
+    CIj = L @ U11   # Compute selected columns
+    C = P @ CIj
+    Z = ZjJ
+    return C, Z
 
 def interpolative_qr(M, maxdim):
     k = maxdim
@@ -411,7 +417,17 @@ M = np.array([[1.0, 2.0, 3.0, 4.4231, 5.0, -8.3 ,7.0, 0.2],
               [25.3, 26.0, 20.345, 28.0, -9.1, 30.0, 31.0, 32.0],
               [-33.211, 34.0, 3.5732, 36.0, 37.0, 38.0, 39.4323, 40.0],
               [39.33, 42.0, 43.0, -41.21, 45.0, 46.0, 47.167, 48.0]])
-
 cutoff = 1e-8
 maxdim = 8
-C, Z, pivot_cols, inf_error = interpolative_prrldu(M, cutoff, maxdim)
+#C, Z, pivot_cols, inf_error = interpolative_prrldu(M, cutoff, maxdim)
+
+m = 50
+n = 40
+rank = 10
+min_val = 0
+max_val = 1
+A = np.random.uniform(min_val, max_val, (m,rank))
+B = np.random.uniform(min_val, max_val, (rank,n))
+M = A @ B
+C,Z = interpolative_plu(M, 20)
+print(C @ Z)
