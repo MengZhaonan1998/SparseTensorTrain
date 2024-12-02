@@ -1,7 +1,6 @@
 import numpy as np
 import time as tm
-import matplotlib.pyplot as plt
-from scipy.linalg import solve, qr, eigvals, svd, solve_triangular
+from scipy.linalg import solve, qr, eigvals, lu, svd, solve_triangular
 from typing import Tuple, Union, List
 
 # What we have so far...
@@ -65,7 +64,6 @@ def srrqr_tol(A: np.ndarray, f: float = 2.0, tol: float = 1e-5):
     '''
     TODO....    
     '''
-    
     return
 
 def prrldu(M_: np.ndarray, cutoff: float = 0.0, maxdim: int = np.iinfo(np.int32).max, mindim: int = 1) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[int], List[int], float]:
@@ -184,6 +182,11 @@ def interpolative_prrldu(M: np.ndarray, cutoff: float = 0.0, maxdim: int = np.ii
     Z = ZjJ[:, pc]   # Apply column permutation to get Z
     pivot_cols = [pc.index(i) for i in range(k)]  # Get pivot columns (convert from inverse permutation)
     return C, Z,  pivot_cols, inf_error
+
+def interpolative_plu(M: np.ndarray, maxdim: int = np.iinfo(np.int32).max, mindim: int = 1):
+    P, L, U = lu(M)
+    
+    return 
 
 def interpolative_qr(M, maxdim):
     k = maxdim
