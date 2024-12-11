@@ -3,8 +3,8 @@ import sparse as sp
 import tensorly as tl
 from tensorly.contrib.decomposition import tensor_train_cross
 
-from STTSVD import ttsvd  ## TT-SVD written by MENG
-from Utils import TensorSparseStat
+from tensortrain_svd import TT_SVD  ## TT-SVD written by MENG
+from utils import TensorSparseStat
 
 '''
 def TestCase1():
@@ -41,7 +41,7 @@ def TestCase1():
 
     maxdim = 60
     cutoff = 1e-5    
-    factors = ttsvd(SpTd, maxdim, cutoff)
+    factors = TT_SVD(SpTd, maxdim, cutoff)
     reconT = tl.tt_to_tensor(factors)
     print(f"The TTSVD reconstruction error is {tl.norm(SpTd-reconT, 2)/tl.norm(SpTd, 2)}")
     TensorSparseStat(factors)

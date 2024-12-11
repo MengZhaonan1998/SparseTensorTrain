@@ -3,11 +3,15 @@ import time as tm
 from scipy.linalg import solve, qr, eigvals, lu, svd, solve_triangular
 from typing import Tuple, Union, List
 
-# What we have so far...
-# interpolative_prrldu
-# interpolative_pqr
-# interpolative_sqr
-# interpolative_nuclear
+'''
+What we have so far...
+(i)   interpolative_prrldu
+(ii)  interpolative_pqr
+(iii) interpolative_sqr
+(iv)  interpolative_nuclear
+'''
+
+'''========== Interpolative decomposition =========='''
 
 def PivotedQR(X: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     # Array initialization
@@ -400,13 +404,13 @@ def pqr_test():
     print("Unit test ends!")
     return
 
+
 '''========== Unit tests =========='''
 
 #unit_test_1()
 #unit_test_2()
 #unit_test_3()
 #unit_test_4()
-
 #prrldu_test()
 #pqr_test()   # Problem: QR decomposition -> error accumulation? 
 

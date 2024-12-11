@@ -1,6 +1,6 @@
 import numpy as np
 import tensorly as tl
-from STTSVD import ttsvd
+from tensortrain_svd import TT_SVD
 
 def contract(tensor1, modes1, tensor2, modes2):
     """Tensor contraction between two tensors on specified modes
@@ -70,7 +70,6 @@ for i in range(3):
 
 #C = contract(A,[1,2], B, [1,0])
 #D = tl.reshape(A, [8,3])
-
-x = ttsvd(A, 5, 1e-5)
+x = TT_SVD(A, 5, 1e-5)
 
 pass

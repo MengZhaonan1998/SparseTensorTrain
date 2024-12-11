@@ -6,9 +6,10 @@ import tensorly as tl
 from tensorly.contrib.decomposition import tensor_train_cross
 from tensorly.decomposition import tensor_train
 
-from STTCross import sparse_ttcross
-from tensortrain_decomposition import TT_SVD, TT_IDscatter
-from Utils import TensorSparseStat
+from tensortrain_svd import TT_SVD
+from tensortrain_id import TT_IDscatter
+from tensortrain_cross import sparse_ttcross
+from utils import TensorSparseStat
 
 def testCase1():
     print("Unit test 1 starts!")
@@ -144,5 +145,5 @@ def testCase2():
     print("Unit test 1 ends!\n")
     return
 
-#testCase1()
+testCase1()
 testCase2()

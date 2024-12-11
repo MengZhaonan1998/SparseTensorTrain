@@ -6,10 +6,10 @@ import tensorly as tl
 from tensorly.contrib.decomposition import tensor_train_cross
 from tensorly.decomposition import tensor_train
 
-from STTCross import sparse_ttcross
-from STTSVD import ttsvd
-from Utils import TensorSparseStat
-from Utils import readfrostt
+from tensortrain_cross import sparse_ttcross
+from tensortrain_svd import TT_SVD
+from utils import TensorSparseStat
+from utils import readfrostt
 
 class chicago_crime_comm_dataConfig:
     dataPath = "/home/mengzn/Desktop/TensorData/chicago-crime-comm.tns"    
@@ -39,7 +39,7 @@ def UnitTest1():
     maxdim = 39
 
     cutoff = 1e-5    
-    factors = ttsvd(SpTd, maxdim, cutoff)
+    factors = TT_SVD(SpTd, maxdim, cutoff)
     reconT = tl.tt_to_tensor(factors)
     print(f"The TTSVD reconstruction error is {tl.norm(SpTd-reconT, 2)/tl.norm(SpTd, 2)}")
     TensorSparseStat(factors)
