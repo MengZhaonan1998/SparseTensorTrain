@@ -9,9 +9,15 @@ from tensortrain_svd import TT_SVD
 
 def view_tensor_2d(eri_tensor):
     # View the eri tensor in 2D way
-    shape = eri_tensor.shape
-    eri2d = tl.reshape(eri_tensor, [shape[0] * shape[1], shape[2] * shape[3]])
-    plt.imshow(eri2d, interpolation='none')
+    # Reshape the 4D tensor to 2D for visualization
+    eri_2d = np.log10(np.abs(eri_tensor.reshape(eri_tensor.shape[0]*eri_tensor.shape[1], eri_tensor.shape[2]*eri_tensor.shape[3]) + 1e-20))
+
+    plt.figure(figsize=(10,8))
+    plt.imshow(eri_2d, cmap='viridis', aspect='auto')
+    plt.title('ERI Tensor Sparsity Visualization (Log Scale)')
+    plt.colorbar(label='Log10(Absolute Integral Value)')
+    plt.tight_layout()
+    plt.show()
     plt.show()
 
 def disp_eritt_info(eri_tensor, eri_tt, remark = None):
@@ -63,6 +69,40 @@ def eri_test1():
 
 def eri_test2():
     # Electron repulsion integral (eri) tensor test 2
+    # Sodium chloride molecule with a slightly larger, but still minimal basis
+    mol = gto.Mole()
+    mol.atom = '''
+    Na 0.0 0.0 0.0
+    Cl 2.4 0.0 0.0
+    '''
+    mol.basis = 'sto-3g'  # Minimal basis set
+    mol.charge = 0
+    mol.spin = 0    
+    mol.build()
+    
+    # Compute full ERI tensor
+    eri_tensor = mol.intor('int2e')
+    
+    # Print some information about the ERI tensor
+    print("ERI Tensor Shape:", eri_tensor.shape)
+    print("ERI Tensor Data Type:", eri_tensor.dtype)
+    # The indices represent (i,j|k,l) in physicist's notation
+    print("Example ERI element (0,0|0,0):", eri_tensor[0,0,0,0])
+    
+    # TT-ID based on PRRLDU
+    maxdim = 100
+    cutoff = 1e-6
+    eri_tt_id = TT_IDPRRLDU(eri_tensor, maxdim, cutoff)
+    disp_eritt_info(eri_tensor, eri_tt_id, "TT-IDPRRLDU")
+    
+    # TT-SVD
+    cutoff = 1e-6
+    eri_tt_svd = TT_SVD(eri_tensor, maxdim, cutoff)
+    disp_eritt_info(eri_tensor, eri_tt_svd, "TT-SVD")
+    return
+
+def eri_test3():
+    # Electron repulsion integral (eri) tensor test 3
     # Define the molecule
     mol = gto.Mole()
     mol.atom = '''
@@ -97,5 +137,5 @@ def eri_test2():
     disp_eritt_info(eri_tensor, eri_tt_svd, "TT-SVD")
     return
 
-eri_test1()
-#eri_test2()
+#eri_test1()
+eri_test2()
