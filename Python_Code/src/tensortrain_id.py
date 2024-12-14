@@ -14,7 +14,6 @@ def TT_IDPRRLDU(tensorX: tl.tensor, r_max: int, eps: float, verbose: int = 0) ->
     ttList = []        # list storing tt factors
     iterlist = list(range(1, dim))  # Create iteration list: 1, 2, ..., d-1
     iterlist.reverse()              # Reverse the iteration list: d-1, ..., 1 
-    verbose = 1
     
     for i in iterlist:
         W = tl.reshape(W, [int(nbar / r / shape[i]), int(r * shape[i])])  # Reshape W       
@@ -47,7 +46,6 @@ def TT_IDscatter(tensorX: tl.tensor, r_max: int, eps: float, verbose: int = 0) -
     ttList = []        # list storing tt factors
     iterlist = list(range(1, dim))  # Create iteration list: 1, 2, ..., d-1
     iterlist.reverse()              # Reverse the iteration list: d-1, ..., 1 
-    verbose = 1
     
     for i in iterlist:
         W = tl.reshape(W, [int(nbar / r / shape[i]), int(r * shape[i])])  # Reshape W       
@@ -78,7 +76,6 @@ def TT_IDQR(tensorX: tl.tensor, r_max: int, verbose: int = 0) -> list[tl.tensor]
     ttList = []            # list storing tt factors
     iterlist = list(range(1, dim))  # Create iteration list: 1, 2, ..., d-1
     iterlist.reverse()              # Reverse the iteration list: d-1, ..., 1 
-    verbose = 1
     
     for i in iterlist:
         W = tl.reshape(W, [int(nbar / r / shape[i]), int(r * shape[i])])  # Reshape W       

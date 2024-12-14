@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from pyscf import gto, scf
 
 from utils import TensorSparseStat
+from tensorly.contrib.decomposition import tensor_train_cross
 from tensortrain_id import TT_IDPRRLDU
 from tensortrain_svd import TT_SVD
 
@@ -38,6 +39,13 @@ def disp_eritt_info(eri_tensor, eri_tt, remark = None):
     TensorSparseStat(eri_tt)    
     return
 
+def d2s_data_output(eri_tensor):
+    # Take a dense-format eri tensor as input and output the sparse format
+    
+    
+    
+    return
+
 def eri_test1():
     # Electron repulsion integral (eri) tensor test 1
     # Define the molecule
@@ -65,6 +73,13 @@ def eri_test1():
     cutoff = 1e-6
     eri_tt_svd = TT_SVD(eri_tensor, maxdim, cutoff)
     disp_eritt_info(eri_tensor, eri_tt_svd, "TT-SVD")
+    
+    # TT-Cross
+    rank = [1 for i in range(5)]
+    for i in range(3):
+        rank[i+1] = eri_tt_svd[i].shape[2]
+    eri_tt_cross = tensor_train_cross(eri_tensor, rank, cutoff)
+    disp_eritt_info(eri_tensor, eri_tt_cross, "TT-CROSS")
     return
 
 def eri_test2():
@@ -99,6 +114,13 @@ def eri_test2():
     cutoff = 1e-6
     eri_tt_svd = TT_SVD(eri_tensor, maxdim, cutoff)
     disp_eritt_info(eri_tensor, eri_tt_svd, "TT-SVD")
+    
+    # TT-Cross
+    rank = [1 for i in range(5)]
+    for i in range(3):
+        rank[i+1] = eri_tt_svd[i].shape[2]
+    eri_tt_cross = tensor_train_cross(eri_tensor, rank, cutoff)
+    disp_eritt_info(eri_tensor, eri_tt_cross, "TT-CROSS")
     return
 
 def eri_test3():
@@ -127,15 +149,23 @@ def eri_test3():
 
     # TT-ID based on PRRLDU
     maxdim = 300
-    cutoff = 1e-8
+    cutoff = 1e-6
     eri_tt_id = TT_IDPRRLDU(eri_tensor, maxdim, cutoff)
     disp_eritt_info(eri_tensor, eri_tt_id, "TT-IDPRRLDU")
     
     # TT-SVD
-    cutoff = 1e-7
+    cutoff = 1e-6
     eri_tt_svd = TT_SVD(eri_tensor, maxdim, cutoff)
     disp_eritt_info(eri_tensor, eri_tt_svd, "TT-SVD")
+    
+    # TT-Cross
+    rank = [1 for i in range(5)]
+    for i in range(3):
+        rank[i+1] = eri_tt_svd[i].shape[2]
+    eri_tt_cross = tensor_train_cross(eri_tensor, rank, cutoff)
+    disp_eritt_info(eri_tensor, eri_tt_cross, "TT-CROSS")
     return
 
 #eri_test1()
-eri_test2()
+#eri_test2()
+eri_test3()

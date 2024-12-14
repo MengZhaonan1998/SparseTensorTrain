@@ -72,7 +72,7 @@ def srrqr_tol(A: np.ndarray, f: float = 2.0, tol: float = 1e-5):
 
 def prrldu(M_: np.ndarray, cutoff: float = 0.0, maxdim: int = np.iinfo(np.int32).max, mindim: int = 1) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[int], List[int], float]:
     """
-    Implements the PRRLDU matrix decomposition algorithm.
+    Implements the PRRLDU matrix decomposition algorithm (dense v1).
     Args:
         M_: Input matrix
         cutoff: Tolerance for considering values as zero
@@ -163,6 +163,33 @@ def prrldu(M_: np.ndarray, cutoff: float = 0.0, maxdim: int = np.iinfo(np.int32)
     
     return L, d, U, row_perm_inv, col_perm_inv, inf_error
 
+def prrldu2(M_: np.ndarray, cutoff: float = 1e-10, maxdim: int = np.iinfo(np.int32).max) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Implements the PRRLDU matrix decomposition algorithm (dense v2).
+    Args:
+        M_: Input matrix
+        cutoff: Tolerance for rank truncation
+        maxdim: Maximum dimension for the decomposition
+    Returns:
+        Tuple containing (P, L, U)
+    """
+    # Pivoted LU decomposition (Scipy) 
+    assert maxdim > 0, "maxdim must be positive"
+    M = M_.copy()
+    Nr, Nc = M.shape
+    P, L, U = lu(M)    
+    
+    # Rank truncation
+    d = np.abs(U.diagonal())
+    r = len(d[d > cutoff])
+    r = r if r <= maxdim else maxdim 
+    
+    # New L, U
+    L = L[:, 0:r]
+    U = U[0:r, :]    
+    return P, L, U
+
+
 def interpolative_prrldu(M: np.ndarray, cutoff: float = 0.0, maxdim: int = np.iinfo(np.int32).max, mindim: int = 1) -> Tuple[np.ndarray, np.ndarray, List[int], float]:
     """
     Compute interpolative decomposition (ID) from PRRLDU.
@@ -187,8 +214,8 @@ def interpolative_prrldu(M: np.ndarray, cutoff: float = 0.0, maxdim: int = np.ii
     pivot_cols = [pc.index(i) for i in range(k)]  # Get pivot columns (convert from inverse permutation)
     return C, Z,  pivot_cols, inf_error
 
-def interpolative_plu(M: np.ndarray, maxdim: int = np.iinfo(np.int32).max, mindim: int = 1):
-    P, L, U = lu(M)
+def interpolative_prrldu2(M: np.ndarray, cutoff: float = 0.0, maxdim: int = np.iinfo(np.int32).max, mindim: int = 1) -> Tuple[np.ndarray, np.ndarray]:
+    P, L, U = prrldu2(M, cutoff, maxdim)
     k = L.shape[1]
     U11 = U[:, :k]  # Extract relevant submatrices
     iU11 = np.linalg.solve(U11, np.eye(U.shape[0])) # Compute inverse of U11 through backsolving
@@ -425,13 +452,14 @@ cutoff = 1e-8
 maxdim = 8
 #C, Z, pivot_cols, inf_error = interpolative_prrldu(M, cutoff, maxdim)
 
-m = 50
-n = 40
-rank = 10
+m = 4
+n = 5
+rank = 2
 min_val = 0
 max_val = 1
 A = np.random.uniform(min_val, max_val, (m,rank))
 B = np.random.uniform(min_val, max_val, (rank,n))
 M = A @ B
-C,Z = interpolative_plu(M, 20)
-print(C @ Z)
+C, Z = interpolative_prrldu2(M, 1e-10, 4)
+print(M- C @ Z)
+pass
