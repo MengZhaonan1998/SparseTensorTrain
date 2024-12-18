@@ -70,7 +70,9 @@ def srrqr_tol(A: np.ndarray, f: float = 2.0, tol: float = 1e-5):
     '''
     return
 
-def prrldu(M_: np.ndarray, cutoff: float = 0.0, maxdim: int = np.iinfo(np.int32).max, mindim: int = 1) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[int], List[int], float]:
+def prrldu(M_: np.ndarray, cutoff: float = 0.0, 
+           maxdim: int = np.iinfo(np.int32).max, mindim: int = 1
+           ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[int], List[int], float]:
     """
     Implements the PRRLDU matrix decomposition algorithm (dense v1).
     Args:
@@ -163,7 +165,9 @@ def prrldu(M_: np.ndarray, cutoff: float = 0.0, maxdim: int = np.iinfo(np.int32)
     
     return L, d, U, row_perm_inv, col_perm_inv, inf_error
 
-def prrldu2(M_: np.ndarray, cutoff: float = 1e-10, maxdim: int = np.iinfo(np.int32).max) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def prrldu2(M_: np.ndarray, cutoff: float = 1e-10, 
+            maxdim: int = np.iinfo(np.int32).max
+            ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Implements the PRRLDU matrix decomposition algorithm (dense v2).
     Args:
@@ -188,7 +192,6 @@ def prrldu2(M_: np.ndarray, cutoff: float = 1e-10, maxdim: int = np.iinfo(np.int
     L = L[:, 0:r]
     U = U[0:r, :]    
     return P, L, U
-
 
 def interpolative_prrldu(M: np.ndarray, cutoff: float = 0.0, maxdim: int = np.iinfo(np.int32).max, mindim: int = 1) -> Tuple[np.ndarray, np.ndarray, List[int], float]:
     """
