@@ -114,6 +114,40 @@ def spInterpolative_prrldu(M: csc_matrix, cutoff: float = 0.0, maxdim: int = np.
     Z = ZjJ.dot(Pc_csc.transpose())  # Apply column permutation to get Z
     return C, Z
 
+def econSpInterpolative_prrldu(M: csc_matrix, cutoff: float = 0.0, maxdim: int = np.iinfo(np.int32).max, mindim: int = 1
+                           ) -> Tuple[csc_matrix, np.array, np.array]:
+    """
+    Compute sparse interpolative decomposition (ID) from sparse PRRLDU for sparse M.
+    The storage of factor Z is further compressed in a more economic way, 
+    stored by a dense coefficient matrix and a permutation vector
+    Args:
+        M: Input sparse matrix
+        **kwargs: Additional keyword arguments passed to prrldu
+    Returns:
+        Tuple containing (C, Z, pivot_columns, inf_error)
+        - C: CSC-format sparse matrix containing selected columns 
+        - ZjJ: Dense matrix containing coefficients
+        - pz: Permutation vector for the coefficient matrix 
+    """   
+    # Simulate the sparse prrldu decomposition (as there is no proper sparse prrldu for python so far)
+    # Note: we actually do not need L
+    try:
+        dense_M = M.toarray()
+    except AttributeError:
+        dense_M = M.todense()
+    L, d, U, pr, pc, inf_error = prrldu(dense_M, cutoff, maxdim)
+    U_csc = csc_matrix(U)
+    k = len(d)
+    
+    # Compute C (to modify...)
+    C = csc_matrix(M.toarray()[:, pc[0:k]])  # TODO Note: we need to modify this to a sparse function later!
+    
+    # Computation of coefficients      
+    U11 = csc_col_select(U_csc, k)  # Extract the relevant submatrix
+    iU11 = spsolve_triangular(U11, np.eye(U_csc.shape[0]), lower=False)  # Compute the inverse of U11 through the sparse triangular solver
+    ZjJ = iU11 @ U_csc.toarray()[:, k:]  # Compute interpolation coefficients
+    return C, ZjJ, pc
+
 # ! Problem of prrldu2 for sparse matrices !
 def unit_test_1():
     # unit test for prrldu (dense & sparse)
@@ -154,18 +188,25 @@ def unit_test_2():
     # unit test for sparse interpolative decomposition
     print("Unit test for sparse interpolative decomposition starts!")
     rd.seed(10)
-    m = 50
-    r = 30
-    n = 40
-    A = random(m, r, density=1, format='csc', random_state=15)
-    B = random(r, n, density=1, format='csc', random_state=30)
+    m = 6
+    r = 2
+    n = 5
+    A = random(m, r, density=0.5, format='csc', random_state=15)
+    B = random(r, n, density=0.5, format='csc', random_state=30)
     M = A.dot(B)
     M_dense = M.toarray()
     C, Z = spInterpolative_prrldu(M, 1e-10, min(m,n))
     error = np.linalg.norm(M_dense - C.dot(Z).toarray(), ord='fro') / np.linalg.norm(M_dense, ord='fro')   
     print(f"Relative error: {error}")
+    
+    C, ZjJ, pc = econSpInterpolative_prrldu(M, 1e-10, min(m,n))
+    
     print("Unit test ends!")
     return
 
 #unit_test_1()
-#unit_test_2()
+unit_test_2()
+
+# A rule of thumb: coefficient matrix ZjJ is usually dense. 
+# But the sparsity of M will lead to sparsity of ZjJ 
+# TO BE VERIFIED!

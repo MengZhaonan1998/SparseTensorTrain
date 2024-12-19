@@ -57,7 +57,7 @@ def SparseTT_IDPRRLDU(tensorX: sp.COO, r_max: int, eps: float, verbose: int = 0)
             print(f"Iteration {i} -- low rank id approximation error = {rerror}")
 
         ri = C.shape[1]   # r_i-1 = min(r_max, r_delta_i)
-        Ti = sp.COO(csc_row_select(X, ri))
+        Ti = sp.COO(X)    #sp.COO(csc_row_select(X, ri))
         Ti = tl.reshape(Ti, [ri, shape[i], r])
         nbar = int(nbar * ri / shape[i] / r)  # New total size of W
         r = ri            # Renewal r
@@ -69,7 +69,6 @@ def SparseTT_IDPRRLDU(tensorX: sp.COO, r_max: int, eps: float, verbose: int = 0)
     ttList.append(T1)    
     ttList.reverse()
     return ttList
-
 
 def toy_test():
     # Synthetic data generation

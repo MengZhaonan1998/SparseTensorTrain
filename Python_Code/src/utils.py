@@ -1,6 +1,14 @@
 import numpy as np
 import sparse as sp
 import time as tm
+import matplotlib.pyplot as plt
+
+# Visualization of 2D matrix 
+def view_mat2d(matrix):
+    plt.figure(figsize=(10,8))
+    plt.imshow(matrix, cmap='viridis', aspect='auto')
+    plt.tight_layout()
+    plt.show()
 
 # Show sparsity information of the input tensor array 
 def TensorSparseStat(factors: list[np.array]):
