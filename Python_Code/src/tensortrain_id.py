@@ -1,5 +1,4 @@
 import numpy as np
-import numpy.linalg as la
 import tensorly as tl
 from interpolative_decomposition import interpolative_nuclear, interpolative_qr, interpolative_prrldu
 
@@ -113,5 +112,5 @@ def toy_test():
     print(f"the maximum error is {error}")
     return
 
-#toy_test()
+toy_test()
 

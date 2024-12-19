@@ -50,7 +50,10 @@ def simu_spPrrldu(M: csc_matrix, cutoff: float = 0.0,
     """
     assert maxdim > 0, "maxdim must be positive"
     # splu simulation
-    dense_M = M.toarray()
+    try:
+        dense_M = M.toarray()
+    except AttributeError:
+        dense_M = M.todense()
     L, D, U, row_perm_inv, col_perm_inv, inf_error = prrldu(dense_M, cutoff, maxdim)
     L_csc = csc_matrix(L)
     U_csc = csc_matrix(U)
@@ -164,5 +167,5 @@ def unit_test_2():
     print("Unit test ends!")
     return
 
-unit_test_1()
-unit_test_2()
+#unit_test_1()
+#unit_test_2()

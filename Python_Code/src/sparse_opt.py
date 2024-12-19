@@ -1,10 +1,6 @@
 import numpy as np
-import random as rd
-from scipy.sparse import csc_matrix, random
+from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import splu
-from scipy.linalg import lu
-from typing import Tuple, Union, List
-from interpolative_decomposition import prrldu2, prrldu
 
 def permutation_vector_to_matrix(p):
     """
