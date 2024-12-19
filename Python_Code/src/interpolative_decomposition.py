@@ -444,7 +444,7 @@ def pqr_test():
 #prrldu_test()
 #pqr_test()   # Problem: QR decomposition -> error accumulation? 
 
-
+'''
 M = np.array([[1.0, 2.0, 3.0, 4.4231, 5.0, -8.3 ,7.0, 0.2],
               [9.0, 10.0, -11.0, 12.0, 13.23, 14.0, 15.0, 16.0],
               [17.0, 18.232, 19.0, 20.0, 21.0, 22.432, 23.0, 24.0],
@@ -466,3 +466,4 @@ M = A @ B
 C, Z = interpolative_prrldu2(M, 1e-10, 4)
 print(M- C @ Z)
 pass
+'''

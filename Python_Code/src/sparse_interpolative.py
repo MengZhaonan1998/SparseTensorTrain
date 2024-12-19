@@ -1,10 +1,31 @@
 import numpy as np
 import random as rd
 from scipy.sparse import csc_matrix, random
+from scipy.sparse.linalg import SuperLU, spsolve_triangular
 from scipy.linalg import lu
 from typing import Tuple, Union, List
 from interpolative_decomposition import prrldu, prrldu2
 from sparse_opt import csc_col_select, csc_row_select, permutation_vector_to_matrix
+
+def rrSuperLU(M: csc_matrix, cutoff: float = 0.0, 
+              maxdim: int = np.iinfo(np.int32).max):
+    """
+    Rank revealing SuperLU for Sparse LU decomposition
+    Args:
+        M: Input csc sparse matrix 
+        cutoff: truncation threshold
+        maxdim: maximum dimension of factors
+    Returns:
+        Tuple containing (L_csc, U_csc, Pr_csc, Pc_csc, inf_error)
+        - L_csc: Lower triangular matrix L in csc format
+        - U_csc: Upper triangular matrix U in csc format
+        - Pr_csc: Row permutation matrix in csc format
+        - Pc_csc: Column permutation matrix in csc format
+        - inf_error: Error measure from rank revealing LU
+    """    
+    # TODO...
+    # PRBOLEM: SuperLU in Scipy only takes square matrix as input!     
+    return
 
 def simu_spPrrldu(M: csc_matrix, cutoff: float = 0.0, 
               maxdim: int = np.iinfo(np.int32).max
@@ -14,6 +35,18 @@ def simu_spPrrldu(M: csc_matrix, cutoff: float = 0.0,
     Simulator of partial rank revealing LDU decomposition
     Simulating the sparse operators in LU as there are no
     LU methods handling NON-SQUARE matrices in Scipy/...
+    Args:
+        M: Input csc sparse matrix 
+        cutoff: truncation threshold
+        maxdim: maximum dimension of factors
+    Returns:
+        Tuple containing (L_csc, U_csc, Pr_csc, Pc_csc, inf_error)
+        - L_csc: Lower triangular matrix L in csc format
+        - D_csc: Diagonal matrix D in csc format
+        - U_csc: Upper triangular matrix U in csc format
+        - Pr_csc: Row permutation matrix in csc format
+        - Pc_csc: Column permutation matrix in csc format
+        - inf_error: Error measure from rank revealing LU
     """
     assert maxdim > 0, "maxdim must be positive"
     # splu simulation
@@ -37,7 +70,6 @@ def simu_spPrrldu2(M: csc_matrix, cutoff: float = 0.0,
     LU methods handling NON-SQUARE matrices in Scipy/...
     """
     assert maxdim > 0, "maxdim must be positive"
-    
     # splu simulation
     dense_M = M.toarray()
     P, L, U = lu(dense_M)
@@ -57,8 +89,32 @@ def simu_spPrrldu2(M: csc_matrix, cutoff: float = 0.0,
     #print(f"bk2-max error: {np.max(np.abs(P.toarray() @ L_new.toarray() @ U_new.toarray() - dense_M))}")
     return P, L_new, U_new
 
+def spInterpolative_prrldu(M: csc_matrix, cutoff: float = 0.0, maxdim: int = np.iinfo(np.int32).max, mindim: int = 1
+                           ) -> Tuple[csc_matrix, csc_matrix]:
+    """
+    Compute sparse interpolative decomposition (ID) from sparse PRRLDU for sparse M.
+    Args:
+        M: Input sparse matrix
+        **kwargs: Additional keyword arguments passed to prrldu
+    Returns:
+        Tuple containing (C, Z, pivot_columns, inf_error)
+        - C: CSC-format sparse matrix containing selected columns 
+        - Z: CSC-format sparse interpolation matrix
+    """   
+    L_csc, D_csc, U_csc, Pr_csc, Pc_csc, inf_error = simu_spPrrldu(M, cutoff, maxdim)
+    k = D_csc.shape[0]
+    U11 = csc_col_select(U_csc, k)   # U11 = U[:, :k], extract relevant submatrices
+    iU11 = spsolve_triangular(U11, np.eye(U_csc.shape[0]), lower=False)  # Compute inverse of U11 through backsolving
+    ZjJ = csc_matrix(iU11 @ U_csc.toarray())  # Compute interpolation matrix
+    CIj = L_csc.dot(D_csc.dot(U11))  # Compute selected columns 
+    C = Pr_csc.dot(CIj)              # Apply row permutation to get C
+    Z = ZjJ.dot(Pc_csc.transpose())  # Apply column permutation to get Z
+    return C, Z
+
 # ! Problem of prrldu2 for sparse matrices !
 def unit_test_1():
+    # unit test for prrldu (dense & sparse)
+    print("Unit test for dense/sparse prrldu starts!")
     rd.seed(10)
     m = 20
     r = 10
@@ -74,20 +130,39 @@ def unit_test_1():
     Pr = permutation_vector_to_matrix(row_perm_inv)
     Pc = permutation_vector_to_matrix(col_perm_inv)
     max_err = np.max(np.abs(recon - Pr.T @ M_dense @ Pc))   
-    print(f"max error prrldu (dense) = {max_err}")
+    print(f"prrldu (dense): Absolute max error = {max_err}")
     
-    # Dense prrldu2 (without column pivots)
+    # Dense prrldu2 (prrldu is the normal plu with rank truncation but without column pivots)
     P, L, U = prrldu2(M_dense, 1e-10, min(m,n))
     Recon = P @ L @ U
     max_err = np.max(np.abs(Recon - M_dense))
-    print(f"max error prrldu2 (dense) = {max_err}")
+    print(f"prrldu2 (dense): Absolute max error = {max_err}")
 
-    # Sparse prrldu (simu)
+    # Sparse prrldu (fake simulation)
     L_csc, D_csc, U_csc, Pr_csc, Pc_csc, inf_error = simu_spPrrldu(M, 1e-10, min(m,n))
     recon = L_csc.dot(D_csc.dot(U_csc))
     recon_recover_rc = Pr_csc.dot(recon.dot(Pc_csc.transpose()))
     max_err = np.max(np.abs(recon_recover_rc.toarray() - M_dense))
-    print(f"max error prrldu (sparse) = {max_err}")
+    print(f"prrldu (sparse): Absolute max error = {max_err}")
+    print("Unit test ends!")
     return 
 
+def unit_test_2():
+    # unit test for sparse interpolative decomposition
+    print("Unit test for sparse interpolative decomposition starts!")
+    rd.seed(10)
+    m = 50
+    r = 30
+    n = 40
+    A = random(m, r, density=1, format='csc', random_state=15)
+    B = random(r, n, density=1, format='csc', random_state=30)
+    M = A.dot(B)
+    M_dense = M.toarray()
+    C, Z = spInterpolative_prrldu(M, 1e-10, min(m,n))
+    error = np.linalg.norm(M_dense - C.dot(Z).toarray(), ord='fro') / np.linalg.norm(M_dense, ord='fro')   
+    print(f"Relative error: {error}")
+    print("Unit test ends!")
+    return
+
 unit_test_1()
+unit_test_2()
