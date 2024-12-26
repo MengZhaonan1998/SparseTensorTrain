@@ -120,8 +120,9 @@ def prrldu(M_: np.ndarray, cutoff: float = 0.0,
         rps[s], rps[piv[0]] = rps[piv[0]], rps[s]
         cps[s], cps[piv[1]] = cps[piv[1]], cps[s]
         s += 1
-    
-    M = M_[rps, :][:, cps]
+   
+    # Commented on Dec.23/2024
+    #M = M_[rps, :][:, cps]
     
     # Initialize L, d, U
     L = np.eye(Nr, k)
@@ -148,9 +149,11 @@ def prrldu(M_: np.ndarray, cutoff: float = 0.0,
         if s < Nc - 1:
             piv_row = M[s, (s+1):]
             U[s, (s+1):] = piv_row / P
-        if s < k - 1:
-            M[(s+1):, (s+1):] = M[(s+1):, (s+1):] - np.outer(piv_col, piv_row) / P
-    
+        
+        # Commented on Dec.23/2024
+        #if s < k - 1:
+        #    M[(s+1):, (s+1):] = M[(s+1):, (s+1):] - np.outer(piv_col, piv_row) / P
+        
     L = L[:, :rank]
     d = d[:rank]
     U = U[:rank, :]
@@ -453,17 +456,17 @@ M = np.array([[1.0, 2.0, 3.0, 4.4231, 5.0, -8.3 ,7.0, 0.2],
               [39.33, 42.0, 43.0, -41.21, 45.0, 46.0, 47.167, 48.0]])
 cutoff = 1e-8
 maxdim = 8
-#C, Z, pivot_cols, inf_error = interpolative_prrldu(M, cutoff, maxdim)
+C, Z, pivot_cols, inf_error = interpolative_prrldu(M, cutoff, maxdim)
 
-m = 4
-n = 5
-rank = 2
+m = 6
+n = 8
+rank = 5 
 min_val = 0
 max_val = 1
 A = np.random.uniform(min_val, max_val, (m,rank))
 B = np.random.uniform(min_val, max_val, (rank,n))
 M = A @ B
-C, Z = interpolative_prrldu2(M, 1e-10, 4)
+C, Z,  pivot_cols, inf_error = interpolative_prrldu(M, 1e-10, rank)
 print(M- C @ Z)
 pass
 '''

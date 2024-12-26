@@ -7,7 +7,7 @@ from tensorly.contrib.decomposition import tensor_train_cross
 from tensorly.decomposition import tensor_train
 
 from tensortrain_svd import TT_SVD
-from tensortrain_id import TT_IDscatter
+from tensortrain_id import TT_IDscatter, TT_IDPRRLDU
 from tensortrain_cross import sparse_ttcross
 from utils import TensorSparseStat
 
@@ -82,10 +82,10 @@ def testCase1():
 def testCase2():
     print("Unit test 2 starts!")
     
-    rank = [1, 5, 10, 5, 1]         # TT rank
-    order = [10, 10, 10, 10]        # tensor order
-    density = [0.1, 0.1, 0.1, 0.1]  # density for every factor
-    seed = [1, 2, 3, 4]             # random seeds
+    rank = [1, 40, 150, 40, 1]         # TT rank
+    order = [50, 50, 50, 50]        # tensor order
+    density = [0.01, 0.01, 0.01, 0.01]  # density for every factor
+    seed = [2, 3, 4, 5]             # random seeds
     factors = []                    # factor list 
 
     # Construct sparse tensor factors in a sparse format
@@ -112,6 +112,17 @@ def testCase2():
                 f.write(f"{coord[0][i]} {coord[1][i]} {coord[2][i]} {nnzData[i]}\n")
     '''
 
+    # TT-ID
+    rank_max = max(rank)
+    eps = 1e-5
+    
+    #factors = TT_IDscatter(SpTd, rank_max, eps)
+    factors = TT_IDPRRLDU(SpTd, rank_max, eps)
+    reconT = tl.tt_to_tensor(factors)
+    error = tl.norm(reconT - SpTd, 2) / tl.norm(SpTd, 2)
+    print(f"The reconstruction error of TT-ID is {error}")
+    TensorSparseStat(factors)
+
     # TT-SVD
     rank_max = max(rank)
     eps = 1e-8
@@ -119,15 +130,6 @@ def testCase2():
     reconT = tl.tt_to_tensor(factors)
     error = tl.norm(reconT - SpTd, 2) / tl.norm(SpTd, 2)
     print(f"The reconstruction error of TT-SVD is {error}")
-    TensorSparseStat(factors)
-    
-    # TT-ID
-    rank_max = max(rank)
-    eps = 1e-8
-    factors = TT_IDscatter(SpTd, rank_max, eps)
-    reconT = tl.tt_to_tensor(factors)
-    error = tl.norm(reconT - SpTd, 2) / tl.norm(SpTd, 2)
-    print(f"The reconstruction error of TT-ID is {error}")
     TensorSparseStat(factors)
     
     # TT Cross 
@@ -145,5 +147,5 @@ def testCase2():
     print("Unit test 1 ends!\n")
     return
 
-testCase1()
+#testCase1()
 testCase2()

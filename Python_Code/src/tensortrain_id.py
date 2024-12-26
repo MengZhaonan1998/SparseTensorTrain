@@ -1,5 +1,6 @@
 import numpy as np
 import tensorly as tl
+import utils
 from interpolative_decomposition import interpolative_nuclear, interpolative_qr, interpolative_prrldu
 
 def TT_IDPRRLDU(tensorX: tl.tensor, r_max: int, eps: float, verbose: int = 0) -> list[tl.tensor]:
@@ -98,11 +99,11 @@ def TT_IDQR(tensorX: tl.tensor, r_max: int, verbose: int = 0) -> list[tl.tensor]
     return ttList
 
 def toy_test():
-    shape = [4, 5, 8, 3]
-    rank = [1, 3, 6, 2, 1]
+    shape = [50, 50, 50, 50]
+    rank = [1, 40, 100, 40, 1]
     ttfactor = tl.random.random_tt(shape, rank)
     tensor = tl.tt_to_tensor(ttfactor)
-    ttfactor = TT_IDPRRLDU(tensor, 10, 1e-10)
+    ttfactor = TT_IDPRRLDU(tensor, 50, 1e-10)
     reconT = tl.tt_to_tensor(ttfactor)
     diff = np.abs(reconT - tensor)
     error = np.max(diff)
@@ -110,7 +111,8 @@ def toy_test():
         factor = ttfactor[i]
         print(f"Factor {i}: {factor.shape}")
     print(f"the maximum error is {error}")
+    utils.TensorSparseStat(ttfactor)
     return
 
-toy_test()
+#toy_test()
 
