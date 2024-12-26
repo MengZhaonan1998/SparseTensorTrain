@@ -140,6 +140,6 @@ void toy_test()
 
 int main(int argc, char** argv) 
 {
-    SparseSyntheticT_DenseTest({20, 30, 30, 10}, {10, 30, 8}, {0.05, 0.05, 0.05, 0.05}, TTID_PRRLDU);
+    SparseSyntheticT_DenseTest({50, 50, 50, 50}, {40, 150, 40}, {0.01, 0.01, 0.01, 0.01}, TTID_PRRLDU);
     return 0; 
 }
