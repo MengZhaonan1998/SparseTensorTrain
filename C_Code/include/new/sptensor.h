@@ -1,4 +1,5 @@
 #include "core.h"
+#include "external.h"
 
 // Helper for index sequence
 template<size_t... Is>
@@ -15,13 +16,12 @@ struct MakeIndexSequence<0, Is...> {
 template<typename T, size_t Order>
 class COOTensor {
 private:
-    // ...
-public:
     // Array to store dimensions
     std::array<size_t, Order> dimensions;
-    
+
     // Maximum capacity for non-zero elements
     size_t capacity;
+    
     // Current number of non-zero elements
     size_t nnz_count;
     
@@ -29,6 +29,7 @@ public:
     std::array<size_t*, Order> indices;  // Array of pointers to index arrays
     T* values;                           // Values of non-zero elements
 
+public:
     // Helper function to check if indices are within bounds
     template<size_t... Is>
     bool check_bounds(const std::array<size_t, Order>& idx, IndexSequence<Is...>) const {
@@ -209,6 +210,22 @@ public:
         return nnz_count;
     }
 
+    size_t get_capacity() const {
+        return capacity;
+    }
+
+    std::array<size_t, Order> get_dimensions() const {
+        return dimensions;
+    }
+
+    std::array<size_t*, Order> get_indices() const {
+        return indices;
+    }
+
+    T* get_values() const {
+        return values;
+    }    
+
     // Sort elements lexicographically by indices
     void sort() {
         size_t* idx = new size_t[nnz_count];
@@ -264,6 +281,29 @@ public:
         }
     }
 
+    tblis::tensor<T> to_dense() const {
+        size_t N = 1;
+        for (size_t i = 0; i < Order; ++i) {
+            N *= dimensions[i];
+        }
+        tblis::tensor<T> fullT(dimensions);
+        std::fill(fullT.data(), fullT.data() + N, 0.0);
+        size_t idt;
+        size_t ddt;
+        for (size_t i = 0; i < nnz_count; ++i) {
+            idt = 0;
+            for (size_t dim = 0; dim < Order; ++dim) {
+                ddt = 1;
+                for (size_t od = dim + 1; od < Order; ++od) {
+                    ddt *= dimensions[od];
+                }
+                idt += indices[dim][i] * ddt;
+            }
+            fullT.data()[idt] = values[i];
+        }
+        return fullT;
+    }
+
     // Simplified contraction function for single dimension
     template<size_t OtherOrder>
     COOTensor<T, Order + OtherOrder - 2> contract(
@@ -288,22 +328,22 @@ public:
         }
         for (size_t i = 0; i < OtherOrder; ++i) {
             if (i != other_dim) {
-                out_dims[out_idx++] = other.dimensions[i];
+                out_dims[out_idx++] = other.get_dimensions()[i];
             }
         }
 
         // Create result tensor
-        size_t initial_capacity = std::min(nnz_count * other.nnz_count, 
-                                         capacity + other.capacity);
+        size_t initial_capacity = std::min(nnz_count * other.nnz(), 
+                                         capacity + other.get_capacity());
         COOTensor<T, ResultOrder> result(initial_capacity, out_dims);
         
         // For each non-zero element in this tensor
         for (size_t i = 0; i < nnz_count; ++i) {
             // For each non-zero element in other tensor
-            for (size_t j = 0; j < other.nnz_count; ++j) {
+            for (size_t j = 0; j < other.nnz(); ++j) {
                 // Check if contracted indices match
-                if (indices[this_dim][i] == other.indices[other_dim][j]) {
-                    T prod = values[i] * other.values[j];
+                if (indices[this_dim][i] == other.get_indices()[other_dim][j]) {
+                    T prod = values[i] * other.get_values()[j];
                     if (prod != T(0)) {
                         // Build output indices
                         std::array<size_t, ResultOrder> out_indices;
@@ -319,7 +359,7 @@ public:
                         // Map indices from other tensor
                         for (size_t k = 0; k < OtherOrder; ++k) {
                             if (k != other_dim) {
-                                out_indices[out_idx++] = other.indices[k][j];
+                                out_indices[out_idx++] = other.get_indices()[k][j];
                             }
                         }
                         
@@ -332,3 +372,62 @@ public:
         return result;
     }
 };
+
+/*
+// Helper class to represent a TT-core
+template<typename T, size_t Order>
+struct TTCore : public COOTensor<T, Order> {
+    using COOTensor<T, Order>::COOTensor;  // Inherit constructors
+};
+
+// Function to contract a tensor train into a full tensor
+template<typename T, typename... Cores>
+auto contract_tt(const Cores&... cores) {
+    static_assert(sizeof...(Cores) > 0, "Need at least one core");
+    
+    // Helper function to check if all arguments are TTCore
+    constexpr bool all_are_tt_cores = (... && std::is_base_of_v<
+        COOTensor<T, Cores::Order>, Cores>);
+    static_assert(all_are_tt_cores, "All arguments must be TTCores");
+    
+    // Start with the first core
+    auto result = std::get<0>(std::forward_as_tuple(cores...));
+    
+    // Sequentially contract with remaining cores
+    size_t core_idx = 1;
+    ((result = result.template contract(cores, 
+        result.Order - 1,  // Last dimension of current result
+        0)),              // First dimension of next core
+        ...,
+        core_idx++);
+    
+    return result;
+}
+*/
+
+template <typename T>
+auto SparseTTtoTensor3(COOTensor<T, 2> T1, COOTensor<T, 3> T2, COOTensor<T, 2> T3)
+{
+    auto i = T1.contract(T2, 1, 0);
+    auto j = i.contract(T3, 2, 0);
+    return j;
+}
+
+template <typename T>
+auto SparseTTtoTensor4(COOTensor<T, 2> T1, COOTensor<T, 3> T2, COOTensor<T, 3> T3, COOTensor<T, 2> T4)
+{
+    auto i = T1.contract(T2, 1, 0);
+    auto j = i.contract(T3, 2, 0);
+    auto k = j.contract(T4, 3, 0);
+    return k;
+}
+
+template <typename T>
+auto SparseTTtoTensor5(COOTensor<T, 2> T1, COOTensor<T, 3> T2, COOTensor<T, 3> T3, COOTensor<T, 3> T4, COOTensor<T, 2> T5)
+{
+    auto i = T1.contract(T2, 1, 0);
+    auto j = i.contract(T3, 2, 0);
+    auto k = j.contract(T4, 3, 0);
+    auto l = k.contract(T5, 4, 0);
+    return l;
+}
