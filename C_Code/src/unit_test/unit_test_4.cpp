@@ -198,10 +198,10 @@ TEST(SparseTensor_TEST, COO_DataIO)
     tensor1.add_element(1.3, 0, 1, 1);
     tensor1.add_element(-9.7,0, 1, 2);
     tensor1.add_element(-8.4,1, 2, 3);
-    tensor1.write_to_file("tensor.txt");
+    tensor1.write_to_file("synspt_2_3_4.tns");
 
     COOTensor<double, 3> tensor2(10, 2, 3, 4);   
-    tensor2.read_from_file("tensor.txt");     
+    tensor2.read_from_file("synspt_2_3_4.tns");     
     
     EXPECT_EQ(tensor2.nnz(), 4);   // Number of non-zeros
     EXPECT_NEAR(3.2, tensor2.get(0,0,0), 1E-10);
@@ -215,7 +215,30 @@ TEST(SparseTensor_TEST, COO_DataIO)
     EXPECT_NEAR(-9.7,full_tensor(0,1,2), 1E-10);
     EXPECT_NEAR(-8.4,full_tensor(1,2,3), 1E-10);
 
-    if (std::remove("tensor.txt") != 0) {
-        throw std::runtime_error("Error deleting file: tensor.txt");
+    if (std::remove("synspt_2_3_4.tns") != 0) {
+        throw std::runtime_error("Error deleting file: synspt_2_3_4.tns");
     }
+}
+
+TEST(SparseTensor_TEST, COO_RandomDataGen)
+{
+    COOTensor<double, 3> tensor(120, 4, 5, 6);  // Initial capacity = 4x5x6
+    
+    // Uniform distribution (default)
+    tensor.generate_random(0.3);  // 0.3 density, uniform [-1, 1]
+
+    // Uniform with custom range
+    tensor.generate_random(0.3, Distribution::UNIFORM, DistributionParams::uniform(0.0, 10.0));
+
+    // Normal distribution
+    tensor.generate_random(0.3, Distribution::NORMAL, DistributionParams::normal(5.0, 2.0));  // mean=5.0, std dev=2.0
+
+    // Standard normal distribution (mean=0, std_dev=1)
+    tensor.generate_random(0.3, Distribution::STANDARD_NORMAL);
+
+    // Gamma distribution
+    tensor.generate_random(0.3, Distribution::GAMMA, DistributionParams::gamma(2.0, 1.0));  // shape=2.0, scale=1.0
+
+    // 6. With specific seed for reproducibility
+    tensor.generate_random(0.3, Distribution::NORMAL, DistributionParams::normal(0.0, 1.0), 42);  // seed=42
 }

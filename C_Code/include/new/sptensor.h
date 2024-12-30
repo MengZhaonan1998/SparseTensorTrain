@@ -1,5 +1,6 @@
 #include "core.h"
 #include "external.h"
+#include "structures.h"
 
 // Helper for index sequence
 template<size_t... Is>
@@ -402,7 +403,7 @@ public:
         outfile.close();
     }
 
-    // Add this member function to the COOTensor class
+    // Read data
     void read_from_file(const std::string& filename) {
         std::ifstream infile(filename);
         if (!infile.is_open()) {
@@ -434,6 +435,80 @@ public:
         }
         
         infile.close();
+    }
+
+    // Random data generator
+    void generate_random(double density, 
+                        Distribution dist = Distribution::UNIFORM,
+                        const DistributionParams& params = DistributionParams(),
+                        unsigned seed = std::random_device{}()) {
+        if (density < 0.0 || density > 1.0) {
+           throw std::invalid_argument("Density must be between 0 and 1");
+        }
+
+        // Reset nnz count
+        nnz_count = 0;
+        
+        // Random number generators
+        //std::random_device rd;
+        std::mt19937 gen(seed);
+        std::uniform_real_distribution<> density_dist(0.0, 1.0);
+        
+        // Create the selected distribution
+        auto value_dist = [&gen, &dist, &params]() -> T {
+            switch (dist) {
+                case Distribution::UNIFORM: {
+                    std::uniform_real_distribution<> d(params.min_value, params.max_value);
+                    return static_cast<T>(d(gen));
+                }
+                case Distribution::NORMAL: {
+                    std::normal_distribution<> d(params.mean, params.std_dev);
+                    return static_cast<T>(d(gen));
+                }
+                case Distribution::STANDARD_NORMAL: {
+                    std::normal_distribution<> d(0.0, 1.0);
+                    return static_cast<T>(d(gen));
+                }
+                case Distribution::GAMMA: {
+                    std::gamma_distribution<> d(params.gamma_shape, params.gamma_scale);
+                    return static_cast<T>(d(gen));
+                }
+                default:
+                    throw std::invalid_argument("Unknown distribution type");
+            }
+        };
+
+        // Array to store current indices
+        std::array<size_t, Order> curr_indices;
+        std::fill(curr_indices.begin(), curr_indices.end(), 0);
+        
+        // Iterate through all possible positions
+        bool done = false;
+        while (!done) {
+            // Check if this position should be non-zero
+            if (density_dist(gen) < density) {
+                // Generate random value using selected distribution
+                T value = value_dist();
+                
+                // Add element (will handle capacity resize if needed)
+                add_element_array(value, curr_indices);
+            }
+
+            // Increment indices
+            for (int dim = Order - 1; dim >= 0; --dim) {
+                curr_indices[dim]++;
+                if (curr_indices[dim] < dimensions[dim]) {
+                    break;
+                }
+                curr_indices[dim] = 0;
+                if (dim == 0) {
+                    done = true;
+                }
+            }
+        }
+
+        // Sort the tensor (Needed?)
+        sort();
     }
 };
 
@@ -497,3 +572,4 @@ auto SparseTTtoTensor5(COOTensor<T, 2> T1, COOTensor<T, 3> T2, COOTensor<T, 3> T
     auto l = k.contract(T5, 4, 0);
     return l;
 }
+

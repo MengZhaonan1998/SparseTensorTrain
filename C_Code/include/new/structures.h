@@ -26,6 +26,7 @@ namespace decompRes {
     };
 }
 
+/*
 namespace sparseRes {
     template<class T>
     struct MatrixCOO {
@@ -55,5 +56,47 @@ namespace sparseRes {
         // TODO: Implementation
     };
 }
+*/
+
+enum class Distribution {
+    UNIFORM,      // Uniform distribution between min and max
+    NORMAL,       // Normal distribution with mean and standard deviation
+    STANDARD_NORMAL,  // Normal distribution with mean=0, std=1
+    GAMMA         // Gamma distribution with shape (k) and scale (theta)
+};
+
+struct DistributionParams {
+    // Parameters for various distributions
+    double min_value = -1.0;     // For uniform
+    double max_value = 1.0;      // For uniform
+    double mean = 0.0;           // For normal
+    double std_dev = 1.0;        // For normal
+    double gamma_shape = 1.0;    // k (shape) parameter for gamma
+    double gamma_scale = 1.0;    // θ (scale) parameter for gamma
+    
+    // Constructor for uniform distribution
+    static DistributionParams uniform(double min = -1.0, double max = 1.0) {
+        DistributionParams params;
+        params.min_value = min;
+        params.max_value = max;
+        return params;
+    }
+    
+    // Constructor for normal distribution
+    static DistributionParams normal(double mean = 0.0, double std_dev = 1.0) {
+        DistributionParams params;
+        params.mean = mean;
+        params.std_dev = std_dev;
+        return params;
+    }
+    
+    // Constructor for gamma distribution
+    static DistributionParams gamma(double shape = 1.0, double scale = 1.0) {
+        DistributionParams params;
+        params.gamma_shape = shape;
+        params.gamma_scale = scale;
+        return params;
+    }
+};
 
 #endif // TENSOR_STRUCTURES_H
