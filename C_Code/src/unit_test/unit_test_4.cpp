@@ -190,3 +190,32 @@ TEST(SparseTensor_TEST, COO_TensorTrainContraction2)
     EXPECT_NEAR(-37.84,result.get(1,1,3,8), 1E-10);
     EXPECT_NEAR(-44.0, result.get(1,1,3,7), 1E-10);
 }
+
+TEST(SparseTensor_TEST, COO_DataIO)
+{
+    COOTensor<double, 3> tensor1(10, 2, 3, 4);
+    tensor1.add_element(3.2, 0, 0, 0);
+    tensor1.add_element(1.3, 0, 1, 1);
+    tensor1.add_element(-9.7,0, 1, 2);
+    tensor1.add_element(-8.4,1, 2, 3);
+    tensor1.write_to_file("tensor.txt");
+
+    COOTensor<double, 3> tensor2(10, 2, 3, 4);   
+    tensor2.read_from_file("tensor.txt");     
+    
+    EXPECT_EQ(tensor2.nnz(), 4);   // Number of non-zeros
+    EXPECT_NEAR(3.2, tensor2.get(0,0,0), 1E-10);
+    EXPECT_NEAR(1.3, tensor2.get(0,1,1), 1E-10);
+    EXPECT_NEAR(-9.7,tensor2.get(0,1,2), 1E-10);
+    EXPECT_NEAR(-8.4,tensor2.get(1,2,3), 1E-10);
+
+    auto full_tensor = tensor2.to_dense();
+    EXPECT_NEAR(3.2, full_tensor(0,0,0), 1E-10);
+    EXPECT_NEAR(1.3, full_tensor(0,1,1), 1E-10);
+    EXPECT_NEAR(-9.7,full_tensor(0,1,2), 1E-10);
+    EXPECT_NEAR(-8.4,full_tensor(1,2,3), 1E-10);
+
+    if (std::remove("tensor.txt") != 0) {
+        throw std::runtime_error("Error deleting file: tensor.txt");
+    }
+}

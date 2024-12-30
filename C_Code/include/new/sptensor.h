@@ -371,6 +371,70 @@ public:
         
         return result;
     }
+
+    // Write data to file
+    void write_to_file(const std::string& filename) const {
+        std::ofstream outfile(filename);
+        if (!outfile.is_open()) {
+            throw std::runtime_error("Could not open file for writing: " + filename);
+        }
+
+        // Write first line: dimensions and data type
+        outfile << "Order: ";
+        for (size_t i = 0; i < Order; ++i) {
+            outfile << dimensions[i];
+            if (i < Order - 1) outfile << " ";
+        }
+        outfile << ", NNZ: " << nnz_count;
+        outfile << ", Datatype: " << typeid(T).name() << "\n";
+
+        // Write each non-zero element
+        for (size_t i = 0; i < nnz_count; ++i) {
+            // Write indices
+            for (size_t dim = 0; dim < Order; ++dim) {
+                outfile << indices[dim][i];
+                if (dim < Order - 1) outfile << " ";
+            }
+            // Write value
+            outfile << " " << std::fixed << std::setprecision(6) << values[i] << "\n";
+        }
+
+        outfile.close();
+    }
+
+    // Add this member function to the COOTensor class
+    void read_from_file(const std::string& filename) {
+        std::ifstream infile(filename);
+        if (!infile.is_open()) {
+            throw std::runtime_error("Could not open file for reading: " + filename);
+        }
+
+        std::string line;
+        // Skip the first line (dimensions and type)
+        std::getline(infile, line);
+        
+        // Reset the number of non-zeros
+        nnz_count = 0;
+        
+        // Read data lines
+        std::array<size_t, Order> curr_indices;
+        T value;
+        
+        while (std::getline(infile, line)) {
+            std::istringstream iss(line);
+            
+            // Read indices and value
+            for (size_t i = 0; i < Order; ++i) {
+                iss >> curr_indices[i];
+            }
+            iss >> value;
+            
+            // Add element to tensor
+            add_element_array(value, curr_indices);
+        }
+        
+        infile.close();
+    }
 };
 
 /*
@@ -405,6 +469,8 @@ auto contract_tt(const Cores&... cores) {
 }
 */
 
+
+// Sparse tensor train -> Tensor. To be modified...
 template <typename T>
 auto SparseTTtoTensor3(COOTensor<T, 2> T1, COOTensor<T, 3> T2, COOTensor<T, 2> T3)
 {

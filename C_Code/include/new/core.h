@@ -16,6 +16,9 @@
 #include <cstring>
 #include <array>
 #include <iomanip>
+#include <fstream>
+#include <typeinfo>
+
 
 #define assertm(exp, msg) assert(((void)msg, exp)) // Use (void) to silence unused warnings.
 
