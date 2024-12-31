@@ -1,11 +1,14 @@
-// tensor_utils.impl.h - Template implementations
-#ifndef TENSOR_UTILS_IMPL_H
-#define TENSOR_UTILS_IMPL_H
+// dtensor.h - Toolkit for dense tensor operations
+#ifndef DENSE_T_H
+#define DENSE_T_H
 
-#include "utils.h"
+#include "core.h"
+#include "external.h"
 
-namespace util {
-    template<class T>
+namespace denseT {
+
+// Frobenious norm
+template<class T>
 T FrobNorm(tblis::tensor<T> tensor)
 {
     auto shape = tensor.lengths(); 
@@ -19,6 +22,7 @@ T FrobNorm(tblis::tensor<T> tensor)
     return fnorm;
 }
 
+// Size..
 template<class T>
 size_t GetSize(tblis::tensor<T> tensor)
 {
@@ -29,6 +33,7 @@ size_t GetSize(tblis::tensor<T> tensor)
     return len;
 }
 
+// Arbitrary-order norm
 template<class T>
 double Norm(tblis::tensor<T> tensor, int mode)
 {
@@ -51,47 +56,6 @@ double Norm(tblis::tensor<T> tensor, int mode)
     return norm;
 }
 
-template<class T>
-void PrintMatWindow(T* matrix, size_t row, size_t col,  
-                    std::tuple<int,int> rmask, std::tuple<int,int> cmask)
-{
-    if (std::get<0>(rmask) < 0 || std::get<1>(rmask) >= row ||
-        std::get<0>(cmask) < 0 || std::get<1>(cmask) >= col) {
-            throw std::invalid_argument("Invalid input row or column mask.");
-    }
-    for (int i = std::get<0>(rmask); i <= std::get<1>(rmask); ++i) {
-        for (int j = std::get<0>(cmask); j <= std::get<1>(cmask); ++j) {
-            std::cout << matrix[i * col + j] << " ";        
-        }
-        std::cout << "\n";
-    }
-    return;
-}
-
-template<class T>
-void Print1DArray(T* array, size_t N) 
-{
-    std::cout << "[" << array[0];
-    for (size_t i = 1; i < N; ++i) {
-        std::cout << ", " << array[i];
-    }
-    std::cout << "]" << std::endl;
-    return;
-}
-
-template<class T>
-void generateRandomArray(T* array, int size, T minValue, T maxValue) {
-    // Create a random number generator and distribution
-    std::random_device rd;  // Seed source
-    std::mt19937 gen(rd()); // Mersenne Twister engine
-    std::uniform_real_distribution<> dis(minValue, maxValue);
-    // Fill the vector with random numbers
-    for (int i = 0; i < size; ++i) {
-        array[i] = dis(gen);
-    }
-    return;
-}
-
 inline std::string generateLetters(char offset, int n) {
     std::string result;
     for (int i = 0; i < n; ++i) {
@@ -100,6 +64,7 @@ inline std::string generateLetters(char offset, int n) {
     return result;
 }
 
+// Tensor train contraction (TT_to_Tensor)
 template<class T>
 tblis::tensor<T> TT_Contraction_dense(std::vector<tblis::tensor<T>> ttList)
 {
@@ -133,6 +98,7 @@ tblis::tensor<T> TT_Contraction_dense(std::vector<tblis::tensor<T>> ttList)
     return tensor;
 }
 
+// Tblis-style synthetic dense tensor generator
 template<class T>
 tblis::tensor<T> SyntheticTenGen(std::initializer_list<int> tShape, std::initializer_list<int> tRank)
 {
@@ -167,10 +133,11 @@ tblis::tensor<T> SyntheticTenGen(std::initializer_list<int> tShape, std::initial
         delete[] randSeq;    
     }
     // TT contraction -> Synthetic output tensor
-    auto synTensor = util::TT_Contraction_dense(ttList);
+    auto synTensor = denseT::TT_Contraction_dense(ttList);
     return synTensor;
 }
 
+// Tblis-style synthetic sparse tensor generator
 template<class T>
 tblis::tensor<T> SyntheticSparseTenGen(std::initializer_list<int> tShape, std::initializer_list<int> tRank,
                                        std::initializer_list<double> tDensity)
@@ -218,10 +185,11 @@ tblis::tensor<T> SyntheticSparseTenGen(std::initializer_list<int> tShape, std::i
         delete[] randSeq;    
     }
     // TT contraction -> Synthetic output tensor
-    auto synTensor = util::TT_Contraction_dense(ttList);
+    auto synTensor = denseT::TT_Contraction_dense(ttList);
     return synTensor;
 }
 
+// Evaluation of the recontruction error
 template<class T>
 double NormError(tblis::tensor<T> tensorA, tblis::tensor<T> tensorB, int mode, bool relative)
 {
@@ -255,4 +223,4 @@ double NormError(tblis::tensor<T> tensorA, tblis::tensor<T> tensorB, int mode, b
 }
 }
 
-#endif // TENSOR_UTILS_IMPL_H
+#endif 

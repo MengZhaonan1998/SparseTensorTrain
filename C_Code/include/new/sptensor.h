@@ -1,3 +1,7 @@
+// sptensor.h - Sparse tensor toolkit
+#ifndef SPTENSOR_H
+#define SPTENSOR_H
+
 #include "core.h"
 #include "external.h"
 #include "structures.h"
@@ -512,69 +516,79 @@ public:
     }
 
     // Binary addition operator
-    COOTensor operator+(const COOTensor& other) const {
-        // Check if dimensions match
-        if (dimensions != other.dimensions) {
-            throw std::invalid_argument("Tensor dimensions must match for addition");
+COOTensor operator+(const COOTensor& other) const {
+    // Check if dimensions match
+    if (dimensions != other.dimensions) {
+        throw std::invalid_argument("Tensor dimensions must match for addition");
+    }
+
+    // Create result tensor with initial capacity
+    size_t initial_capacity = nnz_count + other.nnz_count;
+    COOTensor result(initial_capacity, dimensions);
+
+    // Create temporary arrays for all possible elements
+    std::vector<std::array<size_t, Order>> all_indices;
+    std::vector<T> all_values;
+
+    // First, add all elements from the first tensor
+    for (size_t i = 0; i < nnz_count; ++i) {
+        std::array<size_t, Order> curr_indices;
+        for (size_t dim = 0; dim < Order; ++dim) {
+            curr_indices[dim] = indices[dim][i];
+        }
+        all_indices.push_back(curr_indices);
+        all_values.push_back(values[i]);
+    }
+
+    // Then process elements from the second tensor
+    for (size_t i = 0; i < other.nnz_count; ++i) {
+        std::array<size_t, Order> curr_indices;
+        for (size_t dim = 0; dim < Order; ++dim) {
+            curr_indices[dim] = other.indices[dim][i];
         }
 
-        // Create result tensor with capacity for all possible non-zeros
-        size_t max_capacity = nnz_count + other.nnz_count;
-        COOTensor result(max_capacity, dimensions);
-
-        // Maps to track used indices and their positions
-        std::map<std::vector<size_t>, size_t> index_map;
-
-        // Process first tensor's (this) elements
-        for (size_t i = 0; i < nnz_count; ++i) {
-            // Convert current indices to vector for map key
-            std::vector<size_t> curr_indices(Order);
+        // Look for matching indices in our temporary arrays
+        bool found = false;
+        for (size_t j = 0; j < all_indices.size(); ++j) {
+            bool match = true;
             for (size_t dim = 0; dim < Order; ++dim) {
-                curr_indices[dim] = indices[dim][i];
-            }
-
-            index_map[curr_indices] = i;
-            result.add_element_array(values[i], 
-                                std::array<size_t, Order>(curr_indices.begin(), 
-                                                        curr_indices.end()));
-        }
-
-        // Process second tensor's elements
-        for (size_t i = 0; i < other.nnz_count; ++i) {
-            std::vector<size_t> curr_indices(Order);
-            for (size_t dim = 0; dim < Order; ++dim) {
-                curr_indices[dim] = other.indices[dim][i];
-            }
-
-            // Check if these indices already exist in result
-            auto it = index_map.find(curr_indices);
-            if (it != index_map.end()) {
-                // Position in result tensor where we need to add
-                size_t pos = it->second;
-                T combined_value = result.values[pos] + other.values[i];
-                
-                // If sum is not zero, update the value
-                if (combined_value != T(0)) {
-                    result.add_element_array(combined_value, 
-                                        std::array<size_t, Order>(curr_indices.begin(), 
-                                                                curr_indices.end()));
+                if (all_indices[j][dim] != curr_indices[dim]) {
+                    match = false;
+                    break;
                 }
-            } else {
-                // New position, just add the value
-                result.add_element_array(other.values[i], 
-                                    std::array<size_t, Order>(curr_indices.begin(), 
-                                                            curr_indices.end()));
+            }
+            if (match) {
+                // Update existing value
+                all_values[j] += other.values[i];
+                found = true;
+                break;
             }
         }
 
-        return result;
+        // If no matching indices found, add new element
+        if (!found) {
+            all_indices.push_back(curr_indices);
+            all_values.push_back(other.values[i]);
+        }
     }
 
-    // Addition assignment operator
-    COOTensor& operator+=(const COOTensor& other) {
-        *this = *this + other;
-        return *this;
+    // Add all non-zero values to the result tensor
+    for (size_t i = 0; i < all_indices.size(); ++i) {
+        if (all_values[i] != T(0)) {
+            result.add_element_array(all_values[i], all_indices[i]);
+        }
     }
+
+    // Sort the result tensor
+    result.sort();
+    return result;
+}
+
+// Addition assignment operator
+COOTensor& operator+=(const COOTensor& other) {
+    *this = *this + other;
+    return *this;
+}
 };
 
 
@@ -770,3 +784,5 @@ COOTensor<T, Dim> generate_synthetic_tensor(
     }
 }
 */
+
+#endif

@@ -1,3 +1,7 @@
+// spmatrix.h - Sparse matrix toolkit
+#ifndef SPMATRIX_H
+#define SPMATRIX_H
+
 #include "core.h"
 
 template<typename T>
@@ -186,4 +190,4 @@ struct COOMatrix_l2 {
     }
 };
 
-
+#endif

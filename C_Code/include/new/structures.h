@@ -1,6 +1,6 @@
 // structures.h - Data structures and result types
-#ifndef TENSOR_STRUCTURES_H
-#define TENSOR_STRUCTURES_H
+#ifndef STRUCTURES_H
+#define STRUCTURES_H
 
 #include "core.h"
 
