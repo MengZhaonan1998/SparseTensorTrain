@@ -510,66 +510,263 @@ public:
         // Sort the tensor (Needed?)
         sort();
     }
+
+    // Binary addition operator
+    COOTensor operator+(const COOTensor& other) const {
+        // Check if dimensions match
+        if (dimensions != other.dimensions) {
+            throw std::invalid_argument("Tensor dimensions must match for addition");
+        }
+
+        // Create result tensor with capacity for all possible non-zeros
+        size_t max_capacity = nnz_count + other.nnz_count;
+        COOTensor result(max_capacity, dimensions);
+
+        // Maps to track used indices and their positions
+        std::map<std::vector<size_t>, size_t> index_map;
+
+        // Process first tensor's (this) elements
+        for (size_t i = 0; i < nnz_count; ++i) {
+            // Convert current indices to vector for map key
+            std::vector<size_t> curr_indices(Order);
+            for (size_t dim = 0; dim < Order; ++dim) {
+                curr_indices[dim] = indices[dim][i];
+            }
+
+            index_map[curr_indices] = i;
+            result.add_element_array(values[i], 
+                                std::array<size_t, Order>(curr_indices.begin(), 
+                                                        curr_indices.end()));
+        }
+
+        // Process second tensor's elements
+        for (size_t i = 0; i < other.nnz_count; ++i) {
+            std::vector<size_t> curr_indices(Order);
+            for (size_t dim = 0; dim < Order; ++dim) {
+                curr_indices[dim] = other.indices[dim][i];
+            }
+
+            // Check if these indices already exist in result
+            auto it = index_map.find(curr_indices);
+            if (it != index_map.end()) {
+                // Position in result tensor where we need to add
+                size_t pos = it->second;
+                T combined_value = result.values[pos] + other.values[i];
+                
+                // If sum is not zero, update the value
+                if (combined_value != T(0)) {
+                    result.add_element_array(combined_value, 
+                                        std::array<size_t, Order>(curr_indices.begin(), 
+                                                                curr_indices.end()));
+                }
+            } else {
+                // New position, just add the value
+                result.add_element_array(other.values[i], 
+                                    std::array<size_t, Order>(curr_indices.begin(), 
+                                                            curr_indices.end()));
+            }
+        }
+
+        return result;
+    }
+
+    // Addition assignment operator
+    COOTensor& operator+=(const COOTensor& other) {
+        *this = *this + other;
+        return *this;
+    }
 };
+
+
+
+// Contract function for tensor train contraction
+template<typename T, size_t Order1, size_t Order2>
+auto contract_tt_cores(const COOTensor<T, Order1>& result, 
+                      const COOTensor<T, Order2>& next_core,
+                      size_t contraction_dim) {
+    return result.contract(next_core, contraction_dim, 0);
+}
+
+// Base case for single tensor
+template<typename T, size_t Order>
+auto SparseTTtoTensor(const COOTensor<T, Order>& tensor) {
+    return tensor;
+}
+
+// Recursive case for multiple tensors
+template<typename T, size_t Order1, size_t Order2, typename... Rest>
+auto SparseTTtoTensor(const COOTensor<T, Order1>& first,
+                      const COOTensor<T, Order2>& second,
+                      const Rest&... rest) {
+    // Contract first two tensors
+    auto intermediate = first.contract(second, Order1 - 1, 0);
+    
+    // Recursively contract the result with remaining tensors
+    if constexpr (sizeof...(rest) > 0) {
+        return SparseTTtoTensor(intermediate, rest...);
+    } else {
+        return intermediate;
+    }
+}
+
+// Function to verify tensor train structure
+template<typename T, typename... Tensors>
+void verify_tt_structure(const Tensors&... tensors) {
+    std::vector<size_t> orders = {Tensors::Order...};
+    
+    // Check minimum number of cores
+    if (sizeof...(Tensors) < 2) {
+        throw std::invalid_argument("Tensor train must have at least 2 cores");
+    }
+    
+    // Check first and last cores are order 2
+    if (orders.front() != 2 || orders.back() != 2) {
+        throw std::invalid_argument("First and last cores must be order 2");
+    }
+    
+    // Check middle cores are order 3
+    for (size_t i = 1; i < orders.size() - 1; ++i) {
+        if (orders[i] != 3) {
+            throw std::invalid_argument("Middle cores must be order 3");
+        }
+    }
+}
+
+// Tensor-train contraction main function
+template<typename T, typename... Tensors>
+auto SparseTTtoTensor(const Tensors&... tensors) {
+    // Verify tensor train structure
+    verify_tt_structure<T>(tensors...);
+    // Perform contraction
+    return SparseTTtoTensor<T>(tensors...);
+}
+
+
+
+
+
+
+
+
+
+// TODO....
+// SuperLU_DIST..
+// sota of parallel dense LU decomp
+// SPARTA.. Hash table for search
+// sota of Sparse representation 
+
+
+
+
+
 
 /*
-// Helper class to represent a TT-core
-template<typename T, size_t Order>
-struct TTCore : public COOTensor<T, Order> {
-    using COOTensor<T, Order>::COOTensor;  // Inherit constructors
+// Generate synthetic sparse tensor from random tensor trains
+template<typename T, size_t Dim>
+struct ContractSequence {
+    static COOTensor<T, Dim> contract(
+        const COOTensor<T, 2>& first_core,
+        const std::vector<COOTensor<T, 3>>& middle_cores,
+        const COOTensor<T, 2>& last_core)
+    {
+        // Default implementation for unsupported dimensions
+        throw std::invalid_argument("Unsupported tensor dimension");
+    }
 };
 
-// Function to contract a tensor train into a full tensor
-template<typename T, typename... Cores>
-auto contract_tt(const Cores&... cores) {
-    static_assert(sizeof...(Cores) > 0, "Need at least one core");
-    
-    // Helper function to check if all arguments are TTCore
-    constexpr bool all_are_tt_cores = (... && std::is_base_of_v<
-        COOTensor<T, Cores::Order>, Cores>);
-    static_assert(all_are_tt_cores, "All arguments must be TTCores");
-    
-    // Start with the first core
-    auto result = std::get<0>(std::forward_as_tuple(cores...));
-    
-    // Sequentially contract with remaining cores
-    size_t core_idx = 1;
-    ((result = result.template contract(cores, 
-        result.Order - 1,  // Last dimension of current result
-        0)),              // First dimension of next core
-        ...,
-        core_idx++);
-    
-    return result;
+// Specialization for 3D tensor
+template<typename T>
+struct ContractSequence<T, 3> {
+    static COOTensor<T, 3> contract(
+        const COOTensor<T, 2>& first_core,
+        const std::vector<COOTensor<T, 3>>& middle_cores,
+        const COOTensor<T, 2>& last_core)
+    {
+        auto temp = SparseTTtoTensor<T>(first_core, middle_cores[0]);
+        return SparseTTtoTensor<T>(temp, last_core);
+    }
+};
+
+// Specialization for 4D tensor
+template<typename T>
+struct ContractSequence<T, 4> {
+    static COOTensor<T, 4> contract(
+        const COOTensor<T, 2>& first_core,
+        const std::vector<COOTensor<T, 3>>& middle_cores,
+        const COOTensor<T, 2>& last_core)
+    {
+        auto temp = SparseTTtoTensor<T>(first_core, middle_cores[0]);
+        temp = SparseTTtoTensor<T>(temp, middle_cores[1]);
+        return SparseTTtoTensor<T>(temp, last_core);
+    }
+};
+
+// Specialization for 5D tensor
+template<typename T>
+struct ContractSequence<T, 5> {
+    static COOTensor<T, 5> contract(
+        const COOTensor<T, 2>& first_core,
+        const std::vector<COOTensor<T, 3>>& middle_cores,
+        const COOTensor<T, 2>& last_core)
+    {
+        auto temp = SparseTTtoTensor<T>(first_core, middle_cores[0]);
+        temp = SparseTTtoTensor<T>(temp, middle_cores[1]);
+        temp = SparseTTtoTensor<T>(temp, middle_cores[2]);
+        return SparseTTtoTensor<T>(temp, last_core);
+    }
+};
+
+// Main generator function
+template<typename T, size_t Dim>
+COOTensor<T, Dim> generate_synthetic_tensor(
+    const std::vector<size_t>& shape,           
+    const std::vector<size_t>& tt_ranks,        
+    const std::vector<double>& density_factors, 
+    Distribution factor_dist = Distribution::UNIFORM,
+    const DistributionParams& factor_params = DistributionParams(),
+    unsigned seed = std::random_device{}())
+{
+    // Validate inputs
+    if (shape.empty() || shape.size() != Dim) {
+        throw std::invalid_argument("Shape vector size must match template dimension Dim");
+    }
+    if (tt_ranks.size() != shape.size() + 1) {
+        throw std::invalid_argument("Number of TT-ranks must be number of dimensions + 1");
+    }
+    if (tt_ranks.front() != 1 || tt_ranks.back() != 1) {
+        throw std::invalid_argument("First and last TT-ranks must be 1");
+    }
+    for (auto & ele : density_factors) {
+        if (ele <= 0.0 || ele > 1.0) {
+            throw std::invalid_argument("Density must be between 0 and 1");
+        }
+    }
+
+    // Set random seed
+    std::mt19937 gen(seed);
+
+    // Generate first core (order 2)
+    COOTensor<T, 2> first_core(100, shape[0], tt_ranks[1]);
+    first_core.generate_random(density_factors[0], factor_dist, factor_params, gen());
+
+    // Generate middle cores (order 3)
+    std::vector<COOTensor<T, 3>> middle_cores;
+    for (size_t i = 1; i < shape.size() - 1; ++i) {
+        COOTensor<T, 3> core(100, tt_ranks[i], shape[i], tt_ranks[i + 1]);
+        core.generate_random(density_factors[i], factor_dist, factor_params, gen());
+        middle_cores.push_back(core);
+    }
+
+    // Generate last core (order 2)
+    COOTensor<T, 2> last_core(100, tt_ranks[tt_ranks.size() - 2], 
+                             shape[shape.size() - 1]);
+    last_core.generate_random(density_factors[shape.size() - 1], factor_dist, factor_params, gen());
+
+    // Contract based on dimension
+    if constexpr (Dim == 2) {
+        return SparseTTtoTensor<T>(first_core, last_core);
+    } else {
+        return ContractSequence<T, Dim>::contract(first_core, middle_cores, last_core);
+    }
 }
 */
-
-
-// Sparse tensor train -> Tensor. To be modified...
-template <typename T>
-auto SparseTTtoTensor3(COOTensor<T, 2> T1, COOTensor<T, 3> T2, COOTensor<T, 2> T3)
-{
-    auto i = T1.contract(T2, 1, 0);
-    auto j = i.contract(T3, 2, 0);
-    return j;
-}
-
-template <typename T>
-auto SparseTTtoTensor4(COOTensor<T, 2> T1, COOTensor<T, 3> T2, COOTensor<T, 3> T3, COOTensor<T, 2> T4)
-{
-    auto i = T1.contract(T2, 1, 0);
-    auto j = i.contract(T3, 2, 0);
-    auto k = j.contract(T4, 3, 0);
-    return k;
-}
-
-template <typename T>
-auto SparseTTtoTensor5(COOTensor<T, 2> T1, COOTensor<T, 3> T2, COOTensor<T, 3> T3, COOTensor<T, 3> T4, COOTensor<T, 2> T5)
-{
-    auto i = T1.contract(T2, 1, 0);
-    auto j = i.contract(T3, 2, 0);
-    auto k = j.contract(T4, 3, 0);
-    auto l = k.contract(T5, 4, 0);
-    return l;
-}
-

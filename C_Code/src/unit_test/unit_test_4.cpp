@@ -127,70 +127,6 @@ TEST(SparseTensor_TEST, COO_TensorContraction2)
     EXPECT_NEAR(-6.0,C.get(3,2,6,2), 1E-10);
 }
 
-TEST(SparseTensor_TEST, COO_TensorTrainContraction1)
-{
-    // Create TT-cores with dimensions:
-    // G1(1,n1,r1), G2(r1,n2,r2), G3(r2,n3,1)
-    COOTensor<float, 2> G1(100, 4, 3);    // rank0=1, n1=4, rank1=3
-    COOTensor<float, 3> G2(100, 3, 5, 2); // rank1=3, n2=5, rank2=2
-    COOTensor<float, 2> G3(100, 2, 6);    // rank2=2, n3=6, rank3=1
-    
-    // Fill cores with some values
-    G1.add_element(1.0f, 0, 0);
-    G1.add_element(2.0f, 1, 1);
-    
-    G2.add_element(3.0f, 0, 0, 0);
-    G2.add_element(4.0f, 1, 1, 0);
-    
-    G3.add_element(5.0f, 0, 0);
-    G3.add_element(6.0f, 0, 1);
-    
-    // Contract the entire train
-    // Result will be a tensor of shape (4,5,6)
-    auto result = SparseTTtoTensor3<float>(G1, G2, G3);       
-
-    // Check the correctness
-    EXPECT_EQ(result.nnz(), 4);   // Number of non-zeros
-    EXPECT_NEAR(15.0f, result.get(0,0,0), 1E-8);
-    EXPECT_NEAR(18.0f, result.get(0,0,1), 1E-8);
-    EXPECT_NEAR(40.0f, result.get(1,1,0), 1E-8);
-    EXPECT_NEAR(48.0f, result.get(1,1,1), 1E-8);
-}
-
-TEST(SparseTensor_TEST, COO_TensorTrainContraction2)
-{
-    // Create TT-cores with dimensions:
-    COOTensor<double, 2> G1(100, 2, 5);    
-    COOTensor<double, 3> G2(100, 5, 4, 3); 
-    COOTensor<double, 3> G3(100, 3, 6, 2);
-    COOTensor<double, 2> G4(100, 2, 10); 
-    
-    // Fill cores with some values
-    G1.add_element(-1.0,1, 4);
-    G1.add_element(2.0, 1, 1);
-    G1.add_element(4.2, 1, 2);
-
-    G2.add_element(3.0, 0, 3, 0);
-    G2.add_element(4.0, 4, 1, 2);
-    
-    G3.add_element(5.4, 0, 0, 0);
-    G3.add_element(-2.0,0, 4, 1);
-    G3.add_element(3.0, 1, 1, 0);
-    G3.add_element(1.1, 2, 3, 1);
-
-    G4.add_element(-4.7,0, 4);
-    G4.add_element(8.6, 1, 8);
-    G4.add_element(10.0,1, 7);
-
-    // Contract the entire train
-    auto result = SparseTTtoTensor4<double>(G1, G2, G3, G4);       
-
-    // Check the correctness
-    EXPECT_EQ(result.nnz(), 2);   // Number of non-zeros
-    EXPECT_NEAR(-37.84,result.get(1,1,3,8), 1E-10);
-    EXPECT_NEAR(-44.0, result.get(1,1,3,7), 1E-10);
-}
-
 TEST(SparseTensor_TEST, COO_DataIO)
 {
     COOTensor<double, 3> tensor1(10, 2, 3, 4);
@@ -222,23 +158,106 @@ TEST(SparseTensor_TEST, COO_DataIO)
 
 TEST(SparseTensor_TEST, COO_RandomDataGen)
 {
-    COOTensor<double, 3> tensor(120, 4, 5, 6);  // Initial capacity = 4x5x6
-    
+    COOTensor<double, 3> tensor1(120, 4, 5, 6);  // Initial capacity = 4x5x6
+    COOTensor<double, 3> tensor2(90, 6, 5, 3);  // Initial capacity = 4x5x6
+
     // Uniform distribution (default)
-    tensor.generate_random(0.3);  // 0.3 density, uniform [-1, 1]
+    tensor1.generate_random(0.3);  // 0.3 density, uniform [-1, 1]
 
     // Uniform with custom range
-    tensor.generate_random(0.3, Distribution::UNIFORM, DistributionParams::uniform(0.0, 10.0));
+    tensor2.generate_random(0.3, Distribution::UNIFORM, DistributionParams::uniform(0.0, 10.0));
+
+    auto tensor3 = tensor1.contract(tensor2, 2, 0);
+    //tensor3.print();
 
     // Normal distribution
-    tensor.generate_random(0.3, Distribution::NORMAL, DistributionParams::normal(5.0, 2.0));  // mean=5.0, std dev=2.0
+    //tensor.generate_random(0.3, Distribution::NORMAL, DistributionParams::normal(5.0, 2.0));  // mean=5.0, std dev=2.0
 
     // Standard normal distribution (mean=0, std_dev=1)
-    tensor.generate_random(0.3, Distribution::STANDARD_NORMAL);
+    //tensor.generate_random(0.3, Distribution::STANDARD_NORMAL);
 
     // Gamma distribution
-    tensor.generate_random(0.3, Distribution::GAMMA, DistributionParams::gamma(2.0, 1.0));  // shape=2.0, scale=1.0
+    //tensor.generate_random(0.3, Distribution::GAMMA, DistributionParams::gamma(2.0, 1.0));  // shape=2.0, scale=1.0
 
     // 6. With specific seed for reproducibility
-    tensor.generate_random(0.3, Distribution::NORMAL, DistributionParams::normal(0.0, 1.0), 42);  // seed=42
+    //tensor.generate_random(0.3, Distribution::NORMAL, DistributionParams::normal(0.0, 1.0), 42);  // seed=42
+}
+
+TEST(SparseTensor_TEST, COO_TTContraction1)
+{
+    // Create TT-cores with dimensions:
+    // G1(1,n1,r1), G2(r1,n2,r2), G3(r2,n3,1)
+    COOTensor<float, 2> G1(100, 4, 3);    // rank0=1, n1=4, rank1=3
+    COOTensor<float, 3> G2(100, 3, 5, 2); // rank1=3, n2=5, rank2=2
+    COOTensor<float, 2> G3(100, 2, 6);    // rank2=2, n3=6, rank3=1
+    
+    // Fill cores with some values
+    G1.add_element(1.0f, 0, 0);
+    G1.add_element(2.0f, 1, 1);
+    
+    G2.add_element(3.0f, 0, 0, 0);
+    G2.add_element(4.0f, 1, 1, 0);
+    
+    G3.add_element(5.0f, 0, 0);
+    G3.add_element(6.0f, 0, 1);
+    
+    // Contract the entire train
+    // Result will be a tensor of shape (4,5,6) 
+    auto result = SparseTTtoTensor<float>(G1, G2, G3);
+
+    // Check the correctness
+    EXPECT_EQ(result.nnz(), 4);   // Number of non-zeros
+    EXPECT_NEAR(15.0f, result.get(0,0,0), 1E-8);
+    EXPECT_NEAR(18.0f, result.get(0,0,1), 1E-8);
+    EXPECT_NEAR(40.0f, result.get(1,1,0), 1E-8);
+    EXPECT_NEAR(48.0f, result.get(1,1,1), 1E-8);
+}
+
+TEST(SparseTensor_TEST, COO_TTContraction2)
+{
+    // Create TT-cores with dimensions:
+    COOTensor<double, 2> G1(100, 2, 5);    
+    COOTensor<double, 3> G2(100, 5, 4, 3); 
+    COOTensor<double, 3> G3(100, 3, 6, 2);
+    COOTensor<double, 2> G4(100, 2, 10); 
+    
+    // Fill cores with some values
+    G1.add_element(-1.0,1, 4);
+    G1.add_element(2.0, 1, 1);
+    G1.add_element(4.2, 1, 2);
+
+    G2.add_element(3.0, 0, 3, 0);
+    G2.add_element(4.0, 4, 1, 2);
+    
+    G3.add_element(5.4, 0, 0, 0);
+    G3.add_element(-2.0,0, 4, 1);
+    G3.add_element(3.0, 1, 1, 0);
+    G3.add_element(1.1, 2, 3, 1);
+
+    G4.add_element(-4.7,0, 4);
+    G4.add_element(8.6, 1, 8);
+    G4.add_element(10.0,1, 7);
+
+    // Contract the entire train
+    auto result = SparseTTtoTensor<double>(G1, G2, G3, G4);       
+
+    // Check the correctness
+    EXPECT_EQ(result.nnz(), 2);   // Number of non-zeros
+    EXPECT_NEAR(-37.84,result.get(1,1,3,8), 1E-10);
+    EXPECT_NEAR(-44.0, result.get(1,1,3,7), 1E-10);
+}
+
+
+TEST(SparseTensor_TEST, COO_RandomSparseSynTensor1)
+{
+    COOTensor<double, 2> G1(10, 3, 2);    
+    COOTensor<double, 3> G2(24, 2, 4, 3);
+    COOTensor<double, 2> G3(15, 3, 5);
+
+    G1.generate_random(0.3, Distribution::UNIFORM, DistributionParams::uniform(0.0, 1.0), 100);
+    G2.generate_random(0.3, Distribution::UNIFORM, DistributionParams::uniform(0.0, 1.0), 200);
+    G3.generate_random(0.3, Distribution::UNIFORM, DistributionParams::uniform(0.0, 1.0), 300);
+
+    auto T = SparseTTtoTensor<double>(G1, G2, G3);
+    T.print();
 }
