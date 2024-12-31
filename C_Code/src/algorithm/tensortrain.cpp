@@ -1,5 +1,5 @@
 #include "new/core.h"
-#include "new/utils.h"
+#include "new/dtensor.h"
 #include "new/functions.h"
 
 std::vector<tblis::tensor<double>> TT_SVD_dense(tblis::tensor<double> tensor, int r_max, double eps)
@@ -7,9 +7,9 @@ std::vector<tblis::tensor<double>> TT_SVD_dense(tblis::tensor<double> tensor, in
     // Initial setting
     auto shape = tensor.lengths(); // Get the shape of the input tensor: [n1, n2, ..., nd]
     int dim = shape.size();        // Get the number of dimension d
-    double delta = (eps / std::sqrt(dim - 1)) * util::Norm(tensor, 2);  // Truncation parameter
+    double delta = (eps / std::sqrt(dim - 1)) * denseT::Norm(tensor, 2);  // Truncation parameter
     auto W = tensor;               // Copy tensor to W 
-    auto nbar = util::GetSize(W);  // Total size of W
+    auto nbar = denseT::GetSize(W);  // Total size of W
     int r = 1;                     // Rank r
     std::vector<tblis::tensor<double>> ttList;  // List storing TT factors
     bool verbose = 0;
@@ -76,7 +76,7 @@ std::vector<tblis::tensor<double>> TT_IDQR_dense_nocutoff(tblis::tensor<double> 
     auto shape = tensor.lengths(); // Get the shape of the input tensor: [n1, n2, ..., nd]
     int dim = shape.size();        // Get the number of dimension d
     auto W = tensor;               // Copy tensor to W 
-    auto nbar = util::GetSize(W);  // Total size of W
+    auto nbar = denseT::GetSize(W);  // Total size of W
     int r = 1;                     // Rank r
     std::vector<tblis::tensor<double>> ttList;  // List storing TT factors
     bool verbose = 1;
@@ -140,9 +140,9 @@ std::vector<tblis::tensor<double>> TT_IDPRRLDU_dense(tblis::tensor<double> tenso
     // Initial setting
     auto shape = tensor.lengths(); // Get the shape of the input tensor: [n1, n2, ..., nd]
     size_t dim = shape.size();        // Get the number of dimension d
-    double delta = (eps / std::sqrt(dim - 1)) * util::Norm(tensor, 2);  // Truncation parameter
+    double delta = (eps / std::sqrt(dim - 1)) * denseT::Norm(tensor, 2);  // Truncation parameter
     auto W = tensor;               // Copy tensor to W 
-    auto nbar = util::GetSize(W);  // Total size of W
+    auto nbar = denseT::GetSize(W);  // Total size of W
     int r = 1;                     // Rank r
     std::vector<tblis::tensor<double>> ttList;  // List storing TT factors
     bool verbose = 0;

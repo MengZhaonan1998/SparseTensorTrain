@@ -247,6 +247,90 @@ TEST(SparseTensor_TEST, COO_TTContraction2)
     EXPECT_NEAR(-44.0, result.get(1,1,3,7), 1E-10);
 }
 
+TEST(SparseTensor_TEST, COO_TensorAddition1)
+{
+    // Create two 3x3x3 tensors with initial capacity of 5 elements each
+    std::array<size_t, 3> dimensions = {3, 3, 3};
+    COOTensor<double, 3> tensor1(5, dimensions);
+    COOTensor<double, 3> tensor2(5, dimensions);
+
+    // Add some elements to tensor1
+    std::array<size_t, 3> idx1 = {0, 0, 0};
+    std::array<size_t, 3> idx2 = {1, 1, 1};
+    std::array<size_t, 3> idx3 = {2, 2, 2};
+    tensor1.add_element_array(1.5, idx1);
+    tensor1.add_element_array(2.0, idx2);
+    tensor1.add_element_array(3.5, idx3);
+
+    // Add some elements to tensor2
+    std::array<size_t, 3> idx4 = {0, 0, 0};  // This will add to tensor1's (0,0,0)
+    std::array<size_t, 3> idx5 = {1, 1, 1};  // This will add to tensor1's (1,1,1)
+    std::array<size_t, 3> idx6 = {2, 1, 0};  // This is a new position
+    tensor2.add_element_array(0.5, idx4);
+    tensor2.add_element_array(1.0, idx5);
+    tensor2.add_element_array(2.5, idx6);
+
+    //std::cout << "Tensor 1:\n";
+    //tensor1.print();
+    
+    //std::cout << "\nTensor 2:\n";
+    //tensor2.print();
+
+    // Add the tensors
+    auto result = tensor1 + tensor2;
+    //std::cout << "\nResult of addition:\n";
+    //result.print();
+
+    // Test the += operator
+    tensor1 += tensor2;
+    //std::cout << "\nTensor 1 after +=:\n";
+    //tensor1.print();
+
+    EXPECT_EQ(4, result.nnz());
+    EXPECT_NEAR(2.0, result.get(0,0,0), 1E-10);
+    EXPECT_NEAR(3.0, result.get(1,1,1), 1E-10);
+    EXPECT_NEAR(2.5, result.get(2,1,0), 1E-10);
+    EXPECT_NEAR(3.5, result.get(2,2,2), 1E-10);
+
+    EXPECT_EQ(4, tensor1.nnz());
+    EXPECT_NEAR(2.0, tensor1.get(0,0,0), 1E-10);
+    EXPECT_NEAR(3.0, tensor1.get(1,1,1), 1E-10);
+    EXPECT_NEAR(2.5, tensor1.get(2,1,0), 1E-10);
+    EXPECT_NEAR(3.5, tensor1.get(2,2,2), 1E-10);
+}
+
+
+TEST(SparseTensor_TEST, COO_TensorAddition2)
+{
+    std::array<size_t, 3> dimensions = {5, 5, 5};
+    COOTensor<float, 3> tensor1(125, dimensions);
+    COOTensor<float, 3> tensor2(125, dimensions);
+
+    // Add some random elements to tensor1 and tensor2
+    tensor1.generate_random(0.3, Distribution::UNIFORM, DistributionParams::uniform(0.0, 10.0), 100);
+    tensor2.generate_random(0.3, Distribution::UNIFORM, DistributionParams::uniform(0.0, 10.0), 200);
+   
+    //std::cout << "Tensor 1:\n";
+    //tensor1.print();
+    //std::cout << "\nTensor 2:\n";
+    //tensor2.print();
+
+    // Add the tensors
+    auto result = tensor1 + tensor2;
+    //std::cout << "\nResult of addition:\n";
+    //result.print();
+
+    // Test the += operator
+    tensor1 += tensor2;
+    //std::cout << "\nTensor 1 after +=:\n";
+    //tensor1.print();
+
+    EXPECT_EQ(result.nnz(), tensor1.nnz());
+    for (int i = 0; i < 5; ++i)
+        for (int j = 0; j < 5; ++j)
+            for (int k = 0; k < 5; ++k)
+                EXPECT_NEAR(result.get(i,j,k), tensor1.get(i,j,k), 1E-7);
+}
 
 TEST(SparseTensor_TEST, COO_RandomSparseSynTensor1)
 {
@@ -254,10 +338,18 @@ TEST(SparseTensor_TEST, COO_RandomSparseSynTensor1)
     COOTensor<double, 3> G2(24, 2, 4, 3);
     COOTensor<double, 2> G3(15, 3, 5);
 
-    G1.generate_random(0.3, Distribution::UNIFORM, DistributionParams::uniform(0.0, 1.0), 100);
-    G2.generate_random(0.3, Distribution::UNIFORM, DistributionParams::uniform(0.0, 1.0), 200);
-    G3.generate_random(0.3, Distribution::UNIFORM, DistributionParams::uniform(0.0, 1.0), 300);
+    G1.generate_random(0.3, Distribution::UNIFORM, DistributionParams::uniform(0.0, 10.0), 100);
+    G2.generate_random(0.3, Distribution::UNIFORM, DistributionParams::uniform(0.0, 10.0), 200);
+    G3.generate_random(0.3, Distribution::UNIFORM, DistributionParams::uniform(0.0, 10.0), 300);
 
     auto T = SparseTTtoTensor<double>(G1, G2, G3);
-    T.print();
+    std::cout << "T:\n";
+    //T.print();
+
+    COOTensor<double, 3> noise(60, 3, 4, 5);
+    noise.generate_random(0.5, Distribution::UNIFORM, DistributionParams::uniform(-0.001, 0.001), 150);
+
+    T += noise;
+    //std::cout << "T after noise:\n";
+    //T.print();
 }

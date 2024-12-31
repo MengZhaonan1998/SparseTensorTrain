@@ -1,5 +1,4 @@
 #include "new/core.h"
-//#include "new/utils.h"
 #include "new/functions.h"
 
 void dQR_MGS(double* M, int Nr, int Nc, double* Q, double* R) {

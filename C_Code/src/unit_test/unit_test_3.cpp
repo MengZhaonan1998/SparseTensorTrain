@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "new/core.h"
-#include "new/utils.h"
+#include "new/util.h"
+#include "new/dtensor.h"
 #include "new/functions.h"
 
 TEST(PRRLDU_ID, DenseMat6by8)
@@ -89,7 +89,7 @@ TEST(TTSVD_TEST, Way3_TTSVD_dense1)
                 T(i,j,k) = i + j + k;    
 
     auto factors = TT_SVD_dense(T, 2, 1E-5);
-    auto tensor = util::TT_Contraction_dense(factors);    
+    auto tensor = denseT::TT_Contraction_dense(factors);    
 
     // Find the maximum error between output C and the correct answer
     double max_error = 0.0;
@@ -111,7 +111,7 @@ TEST(TTSVD_TEST, Way4_TTSVD_dense2)
                    T(i,j,k,l) = i * j + k - l;    
 
     auto factors = TT_SVD_dense(T, 10, 1E-10);
-    auto tensor = util::TT_Contraction_dense(factors);
+    auto tensor = denseT::TT_Contraction_dense(factors);
         
     // Find the maximum error between output C and the correct answer
     double max_error = 0.0;
@@ -133,7 +133,7 @@ TEST(TTID_PRRLDU_TEST, Way3_TTID_dense1)
                 T(i,j,k) = i + j + k;    
 
     auto factors = TT_IDPRRLDU_dense(T, 2, 1E-5);
-    auto tensor = util::TT_Contraction_dense(factors);    
+    auto tensor = denseT::TT_Contraction_dense(factors);    
 
     // Find the maximum error between output C and the correct answer
     double max_error = 0.0;
@@ -155,7 +155,7 @@ TEST(TTID_PRRLDU_TEST, Way4_TTID_dense2)
                    T(i,j,k,l) = i * j + k - l;    
 
     auto factors = TT_IDPRRLDU_dense(T, 10, 1E-10);
-    auto tensor = util::TT_Contraction_dense(factors);
+    auto tensor = denseT::TT_Contraction_dense(factors);
         
     // Find the maximum error between output C and the correct answer
     double max_error = 0.0;

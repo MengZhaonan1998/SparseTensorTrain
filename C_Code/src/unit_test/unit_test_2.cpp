@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include "new/core.h"
-#include "new/utils.h"
 #include "new/functions.h"
 
 TEST(TblisTEST, tensor_contraction_1)

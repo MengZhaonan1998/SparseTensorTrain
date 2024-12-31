@@ -1,5 +1,5 @@
 #include "new/core.h"
-#include "new/utils.h"
+#include "new/dtensor.h"
 #include "new/functions.h"
 
 enum dense_tt_id {
@@ -17,7 +17,7 @@ void DenseSyntheticT_DenseTest(std::initializer_list<int> tShape, std::initializ
     std::chrono::duration<double> elapsed;
 
     // Generate a synthetic dense tensor {tShape} (TT rank = {tRank})
-    auto synTensor = util::SyntheticTenGen<double>(tShape, tRank);
+    auto synTensor = denseT::SyntheticTenGen<double>(tShape, tRank);
 
     // Tensor train decomposition
     int maxdim = std::max(tRank);
@@ -49,8 +49,8 @@ void DenseSyntheticT_DenseTest(std::initializer_list<int> tShape, std::initializ
     }   
 
     // Reconstruction evaluation
-    auto recTensor = util::TT_Contraction_dense(ttList);
-    double error = util::NormError(synTensor, recTensor, 2, true);
+    auto recTensor = denseT::TT_Contraction_dense(ttList);
+    double error = denseT::NormError(synTensor, recTensor, 2, true);
     std::cout << "TT recon error: " << error << "\n";
     std::cout << "Test ends." << std::endl;
 }
@@ -64,9 +64,9 @@ void SparseSyntheticT_DenseTest(std::initializer_list<int> tShape, std::initiali
     std::chrono::duration<double> elapsed;
 
     // Generate a synthetic sparse tensor {tShape} (TT rank = {tRank})
-    auto synTensor = util::SyntheticSparseTenGen<double>(tShape, tRank, tDensity);
+    auto synTensor = denseT::SyntheticSparseTenGen<double>(tShape, tRank, tDensity);
     int nnz = 0;
-    int nbar = util::GetSize(synTensor);
+    int nbar = denseT::GetSize(synTensor);
     for (int i = 0; i < nbar; i++) {
         if (std::abs(synTensor.data()[i]) > 1e-10)
             nnz += 1;
@@ -106,15 +106,15 @@ void SparseSyntheticT_DenseTest(std::initializer_list<int> tShape, std::initiali
     std::cout << "Tensor factor info:\n";
     for (int f = 0; f < tShape.size(); ++f) {
         int factor_nnz = 0;
-        int factor_nbar = util::GetSize(ttList[f]);
+        int factor_nbar = denseT::GetSize(ttList[f]);
         for (int i = 0; i < factor_nbar; ++i) {
         if (std::abs(ttList[f].data()[i]) > 1e-10)
             factor_nnz += 1;
         }
         std::cout << "factor " << f << ": nnz = " << factor_nnz << ", density = " << double(factor_nnz) / double(factor_nbar) << "\n";
     }
-    auto recTensor = util::TT_Contraction_dense(ttList);
-    double error = util::NormError(synTensor, recTensor, 2, true);
+    auto recTensor = denseT::TT_Contraction_dense(ttList);
+    double error = denseT::NormError(synTensor, recTensor, 2, true);
     std::cout << "TT recon error: " << error << "\n";
     std::cout << "Test ends." << std::endl;
 }
@@ -132,8 +132,8 @@ void toy_test()
                         tensor(i, j, m, n) = i * j - m + n * l;
     //std::cout << "The toy tensor is \n" << tensor << std::endl;
     auto ttList = TT_IDPRRLDU_dense(tensor, 100, 1e-10);
-    auto recTensor = util::TT_Contraction_dense(ttList);
-    double error = util::NormError(tensor, recTensor, 2, false);
+    auto recTensor = denseT::TT_Contraction_dense(ttList);
+    double error = denseT::NormError(tensor, recTensor, 2, false);
     std::cout << "TT recon error: " << error << "\n";
     std::cout << "Synthetic test 1 ends." << std::endl;
 }

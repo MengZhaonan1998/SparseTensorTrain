@@ -1,5 +1,4 @@
 #include "new/core.h"
-#include "new/utils.h"
 #include "new/functions.h"
 
 // Column inner products by BLAS

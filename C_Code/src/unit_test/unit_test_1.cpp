@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "new/core.h"
-#include "new/utils.h"
+#include "new/util.h"
 #include "new/functions.h"
 
 TEST(LapackeTEST, SVD_2by2)
