@@ -9,6 +9,7 @@ struct COOMatrix_l1 {
     size_t rows;
     size_t cols;
     size_t nnz;
+    size_t capacity;
     size_t* row_indices;
     size_t* col_indices;
     T* values;
@@ -136,6 +137,37 @@ struct COOMatrix_l2 {
             }
         }
         return T(0);  // Return zero if element not found
+    }
+
+    // Update the value at a specific position
+    void update(size_t row, size_t col, T val) {
+        for (size_t i = 0; i < nnz_count; ++i) {
+            if (row_indices[i] == row && col_indices[i] == col) {
+                values[i] = val; 
+                return;                
+            }
+        }
+        add_element(row, col, val);
+    }
+
+    // Update the value by +=
+    void addUpdate(size_t row, size_t col, T val) {
+        for (size_t i = 0; i < nnz_count; ++i) {
+            if (row_indices[i] == row && col_indices[i] == col) {
+                values[i] += val; 
+                return;                
+            }
+        }
+        add_element(row, col, val);
+    }
+
+    // Full format
+    T* todense() {
+        T* full = new T[rows * cols]{0};
+        for (size_t i = 0; i < nnz_count; ++i) {
+            full[row_indices[i] * cols + col_indices[i]] = values[i];
+        }
+        return full;
     }
 
     // Get number of non-zero elements

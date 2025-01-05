@@ -131,7 +131,7 @@ dPartialRRLDU(double* M_, size_t Nr, size_t Nc,
     double inf_error = 0.0;
     size_t s = 0;
     while (s < k) {
-        // Partial M, Mabs = abs(M[s:,,s:])
+        // Partial M, Mabs = abs(M[s:,s:])
         size_t subN = (Nr - s) * (Nc - s);
         double* Mabs = new double[subN];
         for (size_t i = 0; i < Nr - s; ++i)
@@ -155,11 +155,12 @@ dPartialRRLDU(double* M_, size_t Nr, size_t Nc,
         cblas_dswap(Nr, M + piv_c, Nc, M + s, Nc);
 
         if (s < k - 1) {
-            for (size_t i = s + 1; i < Nr; ++i)
+            for (size_t i = s + 1; i < Nr; ++i) {
                 for (size_t j = s + 1; j < Nc; ++j) {
                     double outprod = M[i * Nc + s] * M[s * Nc + j] / M[s * Nc + s];
                     M[i * Nc + j] = M[i * Nc + j] - outprod;
                 }
+            }
         }
 
         // Swap rps, cps

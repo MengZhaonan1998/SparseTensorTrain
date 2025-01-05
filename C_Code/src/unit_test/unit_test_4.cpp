@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "new/spmatrix.h"
 #include "new/sptensor.h"
+//#include "new/util.h"
 
 TEST(SparseMat_TEST, COO_MatStruct)
 {
@@ -25,8 +26,16 @@ TEST(SparseMat_TEST, COO_MatStruct)
 
     // Test copy constructor
     COOMatrix_l2<double> matrix2 = matrix;
+    
     //std::cout << "\nCopied matrix:\n";
     //matrix2.print();
+
+    matrix2.addUpdate(0, 1, 3.4);    
+    //matrix2.print();
+
+    double* full = matrix2.todense();
+    //util::PrintMatWindow(full, 4, 4, {0,3}, {0,3});
+    delete[] full;
 }
 
 TEST(SparseTensor_TEST, COO_TensorStruct)

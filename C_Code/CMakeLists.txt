@@ -122,10 +122,10 @@ target_compile_options(shared_lib_spcuTT PRIVATE
 
 target_link_libraries(synthetic_dense_test PRIVATE shared_lib_denseTT)
 target_link_libraries(synthetic_sparse_test PRIVATE shared_lib_spcuTT)
-target_link_libraries(unit_test_1 PRIVATE shared_lib_denseTT gtest_main)
-target_link_libraries(unit_test_2 PRIVATE shared_lib_denseTT gtest_main)
-target_link_libraries(unit_test_3 PRIVATE shared_lib_denseTT gtest_main)
-target_link_libraries(unit_test_4 PRIVATE shared_lib_denseTT gtest_main)
+target_link_libraries(unit_test_1 PRIVATE shared_lib_denseTT gtest_main CUDA::cudart)
+target_link_libraries(unit_test_2 PRIVATE shared_lib_denseTT gtest_main CUDA::cudart)
+target_link_libraries(unit_test_3 PRIVATE shared_lib_denseTT gtest_main CUDA::cudart)
+target_link_libraries(unit_test_4 PRIVATE shared_lib_denseTT gtest_main CUDA::cudart)
 
 # Output unit-test executable to unit_test/
 set_target_properties(unit_test_1 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/unit_test)
