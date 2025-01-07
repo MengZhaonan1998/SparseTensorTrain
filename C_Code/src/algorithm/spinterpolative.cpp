@@ -1,10 +1,12 @@
 #include <cuda_runtime.h>
 #include "new/sptensor.h"
 #include "new/spmatrix.h"
+#include "new/util.h"
+#include "new/structures.h"
 
 void dCOOMatrix_l1_hMemFree(COOMatrix_l2<double> hM)
 {
-
+    
     return;
 }
 
@@ -62,7 +64,8 @@ void dSparse_econPRRLDU_CPU()
 }
 
 
-void dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> M_, double cutoff, size_t maxdim, size_t mindim)
+decompRes::SparsePrrlduRes<double>
+dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> M_, double cutoff, size_t maxdim, size_t mindim)
 {
     // Dimension argument check
     assertm(maxdim > 0, "maxdim must be positive");
@@ -79,23 +82,22 @@ void dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> M_, double cutoff, size_t max
     std::iota(rps, rps + Nr, 0);
     std::iota(cps, cps + Nc, 0);
 
-    // Copy input M_ to a M
-    COOMatrix_l2<double> M(M_); 
-
-    double inf_error = 0.0;
-    size_t s = 0;
-    
+    COOMatrix_l2<double> M(M_); // Copy input M_ to a M
+    double inf_error = 0.0;     // Inference error 
+    size_t s = 0;               // Iteration number
+    bool denseFlag = false;     // Dense/Sparse switch flag
+   
     // Sparse-style computation 
     // A question: Do we want to sort COO every time?
     // One thing to verify: how much sparsity we lose during this outer-product iteration?
     while (s < k) {
-        // Partial M, Mabs = abs=(M[s:,s:]), max value of Mabs
+        // Partial M, Mabs = abs=(M[s:,s:]), max value of Mabs        
         double Mabs_max = 0.0;
         double Mdenom;
         size_t max_idx;
         size_t nnz = M.nnz_count;
         for (size_t i = 0; i < nnz; ++i) {
-            if (M.row_indices[i] < (Nr - s) && M.col_indices[i] < (Nc - s)) {
+            if (M.row_indices[i] >= s && M.col_indices[i] >= s) {
                 double Mabs = std::abs(M.values[i]);
                 if (Mabs > Mabs_max) {
                     Mabs_max = Mabs;
@@ -117,11 +119,11 @@ void dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> M_, double cutoff, size_t max
         for (size_t i = 0; i < nnz; ++i) {
             if (M.row_indices[i] == s)
                 M.row_indices[i] = piv_r;
-            if (M.row_indices[i] == piv_r)
+            else if (M.row_indices[i] == piv_r)
                 M.row_indices[i] = s;
             if (M.col_indices[i] == s)
                 M.col_indices[i] = piv_c;
-            if (M.col_indices[i] == piv_c)
+            else if (M.col_indices[i] == piv_c)
                 M.col_indices[i] = s;
         }
 
@@ -138,23 +140,87 @@ void dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> M_, double cutoff, size_t max
                 }        
             }
         }
-        
+
         size_t temp;
         temp = rps[s]; rps[s] = rps[piv_r]; rps[piv_r] = temp;
         temp = cps[s]; cps[s] = cps[piv_c]; cps[piv_c] = temp;
-
         s += 1;
+        
+        // Sparse -> Dense criteria
+        std::cout << "Density = " << double(M.nnz_count) / Nr / Nc << std::endl;
+        double density = double(M.nnz_count) / Nr / Nc;
+        if (density > 0.5) {
+            denseFlag = true;
+            break;
+        }
+    }
+
+    // Dense-style computation 
+    double* M_full;
+    if (denseFlag = true) {
+        M_full = M.todense();
+        M.explicit_destroy();
+        while (s < k) {
+            // Partial M, Mabs = abs(M[s:,s:])
+            size_t subN = (Nr - s) * (Nc - s);
+            double* Mabs = new double[subN];
+            for (size_t i = 0; i < Nr - s; ++i)
+                for (size_t j = 0; j < Nc - s; ++j)
+                    Mabs[i * (Nc - s) + j] = std::abs(M_full[(i + s) * Nc + (j + s)]);
+
+            // Max value of Mabs
+            double* pMabs_max = std::max_element(Mabs, Mabs + subN);
+            double Mabs_max = *pMabs_max;
+            if (Mabs_max < cutoff) {
+                inf_error = Mabs_max;
+                delete[] Mabs;
+                break;
+            }
+
+            // piv, swap rows and columns
+            size_t max_idx = std::distance(Mabs, pMabs_max);
+            size_t piv_r = max_idx / (Nc - s) + s;
+            size_t piv_c = max_idx % (Nc - s) + s;
+            cblas_dswap(Nc, M_full +  piv_r * Nc, 1, M_full + s * Nc, 1);
+            cblas_dswap(Nr, M_full + piv_c, Nc, M_full + s, Nc);
+
+            if (s < k - 1) {
+                for (size_t i = s + 1; i < Nr; ++i) {
+                    for (size_t j = s + 1; j < Nc; ++j) {
+                        double outprod = M_full[i * Nc + s] * M_full[s * Nc + j] / M_full[s * Nc + s];
+                        M_full[i * Nc + j] = M_full[i * Nc + j] - outprod;
+                    }
+                }
+            }
+
+            // Swap rps, cps
+            size_t temp;
+            temp = rps[s]; rps[s] = rps[piv_r]; rps[piv_r] = temp;
+            temp = cps[s]; cps[s] = cps[piv_c]; cps[piv_c] = temp;
+
+            delete[] Mabs;
+            s += 1;
+        } 
     }
 
 
-    // Dense-style computation 
-    //while (s < k) {
 
+    std::cout << "final M\n";
+    util::PrintMatWindow(M_full, Nr, Nc, {0, Nr-1}, {0, Nc-1}); 
 
-    //    s += 1;
-    //}
-    
-    return;
+    // Result set
+    decompRes::SparsePrrlduRes<double> resultSet;
+    resultSet.isSparseRes = !denseFlag; // Dense or Sparse result
+    resultSet.isAllReturn = true;       // This parameter is to be re-organized as a input argument?
+
+    if (denseFlag = true) {   
+        // Todo...
+        delete[] M_full;
+        return resultSet;
+    } else {
+        // Todo...
+        return resultSet;
+    }
 }
 
 void dSparse_trsv()

@@ -5,6 +5,7 @@
 #include "core.h"
 #include "external.h"
 #include "structures.h"
+#include "spmatrix.h"
 
 // BLAS operations
 void blas_dcolumn_inner_products(const double* A, int m, int n, double* results);
@@ -30,5 +31,8 @@ void dInterpolative_PrrLDU(double* M, size_t Nr, size_t Nc, size_t maxdim, doubl
 std::vector<tblis::tensor<double>> TT_SVD_dense(tblis::tensor<double> tensor, int r_max, double eps);
 std::vector<tblis::tensor<double>> TT_IDQR_dense_nocutoff(tblis::tensor<double> tensor, int r_max);
 std::vector<tblis::tensor<double>> TT_IDPRRLDU_dense(tblis::tensor<double> tensor, int r_max, double eps);
+
+// Sparse decompositions
+decompRes::SparsePrrlduRes<double> dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> M_, double cutoff, size_t maxdim, size_t mindim);
 
 #endif // TENSOR_DECOMPOSITION_H

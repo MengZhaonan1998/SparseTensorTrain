@@ -50,9 +50,12 @@ struct COOMatrix_l2 {
 
     // Destructor
     ~COOMatrix_l2() {
-        delete[] row_indices;
-        delete[] col_indices;
-        delete[] values;
+        if (row_indices != nullptr)
+            delete[] row_indices;
+        if (col_indices != nullptr)
+            delete[] col_indices;
+        if (values != nullptr)
+            delete[] values;
     }
 
     // Copy constructor
@@ -219,6 +222,22 @@ struct COOMatrix_l2 {
             std::cout << "(" << row_indices[i] << ", " << col_indices[i] 
                       << ") = " << values[i] << "\n";
         }
+    }
+
+    void explicit_destroy() {
+        if (row_indices != nullptr) {
+            delete[] row_indices;
+            row_indices = nullptr;
+        }
+        if (col_indices != nullptr) {
+            delete[] col_indices;
+            col_indices = nullptr;
+        }
+        if (values != nullptr) {
+            delete[] values;
+            values = nullptr;
+        }
+        nnz_count = 0;
     }
 };
 

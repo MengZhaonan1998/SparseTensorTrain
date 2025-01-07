@@ -51,6 +51,7 @@ void generateRandomArray(T* array, int size, T minValue, T maxValue) {
     return;
 }
 
+/*
 // CUDA-error detection function
 #define CHECK_CUDA_ERROR(val) checkCuda((val), #val, __FILE__, __LINE__)
 void checkCuda(cudaError_t err, const char* const func, const char* const file, int const line)
@@ -67,7 +68,7 @@ void checkLast(const char* const file, int const line)
 	if (err != cudaSuccess)
 		fprintf(stderr, "CUDA Runtime Error at: %s: %s\n %s \n", file, line, cudaGetErrorString(err));
 }
-
+*/
 }
 
 #endif

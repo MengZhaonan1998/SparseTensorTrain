@@ -172,10 +172,11 @@ dPartialRRLDU(double* M_, size_t Nr, size_t Nc,
         s += 1;
     } 
 
+    // Commented on Jan 7, 2025
     // New pivoted matrix M
-    for (size_t i = 0; i < Nr; ++i)
-        for (size_t j = 0; j < Nc; ++j)
-            M[i * Nc + j] = M_[rps[i] * Nc + cps[j]];
+    //for (size_t i = 0; i < Nr; ++i)
+    //    for (size_t j = 0; j < Nc; ++j)
+    //        M[i * Nc + j] = M_[rps[i] * Nc + cps[j]];
     //std::cout << "M\n";
     //util::PrintMatWindow(M, Nr, Nc, {0,Nr-1}, {0,Nc-1});
     
@@ -216,11 +217,12 @@ dPartialRRLDU(double* M_, size_t Nr, size_t Nc,
             for (size_t j = s + 1; j < Nc; ++j)
                 U[s * Nc + j] = M[s * Nc + j] / P;
         }
-        if (s < k - 1) {
-            for (size_t i = s + 1; i < Nr; ++i)
-                for (size_t j = s + 1; j < Nc; ++j)
-                    M[i * Nc + j] = M[i * Nc + j] - M[i * Nc + s] * M[s * Nc + j] / P;
-        }
+        // Commented on Jan 7, 2025
+        //if (s < k - 1) {
+        //    for (size_t i = s + 1; i < Nr; ++i)
+        //        for (size_t j = s + 1; j < Nc; ++j)
+        //            M[i * Nc + j] = M[i * Nc + j] - M[i * Nc + s] * M[s * Nc + j] / P;
+        //}
     }
 
     // Initialize the returned result struct

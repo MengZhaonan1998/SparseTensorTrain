@@ -113,7 +113,7 @@ add_executable(unit_test_4 ${SOURCES_UT4})
 
 # Link the shared library and other dependencies to executables
 target_link_libraries(shared_lib_denseTT PRIVATE LAPACK::LAPACK ${LAPACKE_LIB} BLAS::BLAS ${TBLIS_LIB})
-target_link_libraries(shared_lib_spcuTT PUBLIC CUDA::cudart CUDA::cublas CUDA::cusolver CUDA::cusparse)
+target_link_libraries(shared_lib_spcuTT PUBLIC CUDA::cudart CUDA::cublas CUDA::cusolver CUDA::cusparse PRIVATE LAPACK::LAPACK ${LAPACKE_LIB} BLAS::BLAS ${TBLIS_LIB})
 # Set CUDA compile options
 target_compile_options(shared_lib_spcuTT PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler -fPIC>
@@ -122,10 +122,10 @@ target_compile_options(shared_lib_spcuTT PRIVATE
 
 target_link_libraries(synthetic_dense_test PRIVATE shared_lib_denseTT)
 target_link_libraries(synthetic_sparse_test PRIVATE shared_lib_spcuTT)
-target_link_libraries(unit_test_1 PRIVATE shared_lib_denseTT gtest_main CUDA::cudart)
-target_link_libraries(unit_test_2 PRIVATE shared_lib_denseTT gtest_main CUDA::cudart)
-target_link_libraries(unit_test_3 PRIVATE shared_lib_denseTT gtest_main CUDA::cudart)
-target_link_libraries(unit_test_4 PRIVATE shared_lib_denseTT gtest_main CUDA::cudart)
+target_link_libraries(unit_test_1 PRIVATE shared_lib_denseTT gtest_main)
+target_link_libraries(unit_test_2 PRIVATE shared_lib_denseTT gtest_main)
+target_link_libraries(unit_test_3 PRIVATE shared_lib_denseTT gtest_main)
+target_link_libraries(unit_test_4 PRIVATE shared_lib_denseTT gtest_main)
 
 # Output unit-test executable to unit_test/
 set_target_properties(unit_test_1 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/unit_test)
