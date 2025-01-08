@@ -36,7 +36,9 @@ namespace decompRes {
 
         bool isSparseRes;
         bool isAllReturn;
+        bool isFullLU;
         size_t rank;
+        size_t output_rank;
         size_t* row_perm_inv = nullptr;
         size_t* col_perm_inv = nullptr;
         T inf_error;
@@ -51,6 +53,11 @@ namespace decompRes {
             if (row_perm_inv != nullptr) delete[] row_perm_inv;
             if (col_perm_inv != nullptr) delete[] col_perm_inv;
         };
+    };
+
+    struct SparsePrrlduOpts {
+        bool isAllReturn = true;
+        bool isFullLU = true;
     };
 }
 

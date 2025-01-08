@@ -35,8 +35,11 @@ int main(int argc, char** argv)
     M_.add_element(3, 2, 0.2);
     
     //util::PrintMatWindow(M_.todense(), 4, 5, {0,3},{0,4});
-
-    auto result = dSparse_PartialRRLDU_CPU(M_, 1e-8, 5, 1);
+    bool isFullReturn = true;
+    double cutoff = 1e-8;
+    size_t maxdim = 5;
+    size_t mindim = 1;
+    auto result = dSparse_PartialRRLDU_CPU(M_, cutoff, maxdim, mindim, isFullReturn);
 
 
 

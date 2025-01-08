@@ -203,7 +203,10 @@ dPartialRRLDU(double* M_, size_t Nr, size_t Nc,
             break;
         }
 
-        if (P == 0) P = 1;
+        // Commented on Jan 8, 2025
+        //if (P == 0) 
+        //    P = 1;
+        
         rank += 1;
 
         // Gaussian elimination
