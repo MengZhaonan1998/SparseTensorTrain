@@ -239,6 +239,109 @@ struct COOMatrix_l2 {
         }
         nnz_count = 0;
     }
+
+    COOMatrix_l2<T> multiply(const COOMatrix_l2<T>& other) const {
+        if (cols != other.rows) {
+            throw std::invalid_argument("Matrix dimensions don't match for multiplication");
+        }
+
+        // Initialize result matrix
+        COOMatrix_l2<T> result(rows, other.cols);
+        
+        // Create a map to accumulate results for each position
+        std::map<std::pair<size_t, size_t>, T> temp_results;
+        
+        // For each non-zero element in the first matrix
+        for (size_t i = 0; i < nnz_count; ++i) {
+            size_t row_a = row_indices[i];
+            T val_a = values[i];
+            
+            // For each non-zero element in the second matrix
+            for (size_t j = 0; j < other.nnz_count; ++j) {
+                // Only multiply if the column of first matches row of second
+                if (col_indices[i] == other.row_indices[j]) {
+                    size_t col_b = other.col_indices[j];
+                    T val_b = other.values[j];
+                    
+                    // Accumulate the product
+                    temp_results[{row_a, col_b}] += val_a * val_b;
+                }
+            }
+        }
+        
+        // Convert accumulated results to COO format
+        for (const auto& entry : temp_results) {
+            if (entry.second != T(0)) {  // Only store non-zero results
+                result.add_element(entry.first.first, entry.first.second, entry.second);
+            }
+        }
+        
+        // Sort the result for better access patterns
+        result.sort();
+        return result;
+    }
+
+    // Generate random non-zero entries
+    void generate_random(double density, unsigned int seed, T min_val = T(1), T max_val = T(100)) {
+        if (density < 0.0 || density > 1.0) {
+            throw std::invalid_argument("Density must be between 0 and 1");
+        }
+
+        // Calculate number of non-zero elements based on density
+        size_t total_elements = rows * cols;
+        size_t target_nnz = static_cast<size_t>(density * total_elements);
+        
+        // Clear existing data
+        explicit_destroy();
+        
+        // Initialize with new capacity
+        capacity = target_nnz;
+        row_indices = new size_t[capacity];
+        col_indices = new size_t[capacity];
+        values = new T[capacity];
+        
+        // Set up random number generators
+        std::mt19937 gen(seed);
+        std::uniform_int_distribution<size_t> row_dist(0, rows - 1);
+        std::uniform_int_distribution<size_t> col_dist(0, cols - 1);
+        
+        // For floating point values
+        std::uniform_real_distribution<double> val_dist(
+            static_cast<double>(min_val), 
+            static_cast<double>(max_val)
+        );
+        
+        // Use set to ensure unique positions
+        std::set<std::pair<size_t, size_t>> positions;
+        
+        // Generate unique random positions
+        while (positions.size() < target_nnz) {
+            size_t row = row_dist(gen);
+            size_t col = col_dist(gen);
+            positions.insert({row, col});
+        }
+        
+        // Fill the matrix with random values at these positions
+        nnz_count = 0;
+        for (const auto& pos : positions) {
+            T value;
+            if constexpr (std::is_integral<T>::value) {
+                // For integer types
+                value = static_cast<T>(std::round(val_dist(gen)));
+            } else {
+                // For floating point types
+                value = static_cast<T>(val_dist(gen));
+            }
+            
+            row_indices[nnz_count] = pos.first;
+            col_indices[nnz_count] = pos.second;
+            values[nnz_count] = value;
+            nnz_count++;
+        }
+        
+        // Sort the entries
+        sort();
+    }
 };
 
 #endif

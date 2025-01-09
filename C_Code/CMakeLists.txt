@@ -80,6 +80,7 @@ set(SOURCES_UT1 src/unit_test/unit_test_1.cpp)
 set(SOURCES_UT2 src/unit_test/unit_test_2.cpp)
 set(SOURCES_UT3 src/unit_test/unit_test_3.cpp)
 set(SOURCES_UT4 src/unit_test/unit_test_4.cpp)
+set(SOURCES_UT5 src/unit_test/unit_test_5.cpp)
 
 # Google Test setup
 # If Google Test is not installed, download and build it
@@ -110,6 +111,7 @@ add_executable(unit_test_1 ${SOURCES_UT1})
 add_executable(unit_test_2 ${SOURCES_UT2})
 add_executable(unit_test_3 ${SOURCES_UT3})
 add_executable(unit_test_4 ${SOURCES_UT4})
+add_executable(unit_test_5 ${SOURCES_UT5})
 
 # Link the shared library and other dependencies to executables
 target_link_libraries(shared_lib_denseTT PRIVATE LAPACK::LAPACK ${LAPACKE_LIB} BLAS::BLAS ${TBLIS_LIB})
@@ -126,10 +128,12 @@ target_link_libraries(unit_test_1 PRIVATE shared_lib_denseTT gtest_main)
 target_link_libraries(unit_test_2 PRIVATE shared_lib_denseTT gtest_main)
 target_link_libraries(unit_test_3 PRIVATE shared_lib_denseTT gtest_main)
 target_link_libraries(unit_test_4 PRIVATE shared_lib_denseTT gtest_main)
+target_link_libraries(unit_test_5 PRIVATE shared_lib_spcuTT gtest_main)
 
 # Output unit-test executable to unit_test/
 set_target_properties(unit_test_1 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/unit_test)
 set_target_properties(unit_test_2 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/unit_test)
 set_target_properties(unit_test_3 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/unit_test)
 set_target_properties(unit_test_4 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/unit_test)
+set_target_properties(unit_test_5 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/unit_test)
 

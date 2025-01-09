@@ -59,6 +59,22 @@ namespace decompRes {
         bool isAllReturn = true;
         bool isFullLU = true;
     };
+
+    template<class T>
+    struct SparseInterpRes {
+        T* C = nullptr;
+        T* Z = nullptr;
+        size_t* select_cols = nullptr;
+        size_t rank;
+        size_t output_rank;
+        bool isAllReturn;
+
+        void freeSpInterpRes() {
+            if (C != nullptr) delete[] C;
+            if (Z != nullptr) delete[] Z;
+            if (select_cols != nullptr) delete[] select_cols;
+        };
+    };
 }
 
 enum class Distribution {

@@ -3,6 +3,40 @@
 #include "new/sptensor.h"
 //#include "new/util.h"
 
+TEST(SparseMat_TEST, COO_MatMultiply_1)
+{
+    // Create two sparse matrices
+    COOMatrix_l2<double> A(3, 3, 5);
+    COOMatrix_l2<double> B(3, 3, 5);
+
+    // Add some elements
+    A.add_element(0, 0, 1.0);
+    A.add_element(0, 2, 2.0);
+    B.add_element(2, 1, 3.0);
+
+    // Multiply
+    COOMatrix_l2<double> C = A.multiply(B);
+    //C.print();
+}
+
+TEST(SparseMat_TEST, COO_MatMultiply_2)
+{
+    // Create a 100x100 matrix
+    COOMatrix_l2<double> A(6, 4, 24);
+    COOMatrix_l2<double> B(4, 5, 20);
+
+    // Generate random entries
+    double density = 0.3;   // 50% non-zero elements
+    unsigned int seed = 42; // Random seed for reproducibility
+    A.generate_random(density, seed, -10.0, 10.0);
+
+    seed = 76;
+    B.generate_random(density, seed, -10.0, 10.0);
+
+    COOMatrix_l2<double> C = A.multiply(B);
+    C.print();
+}
+
 TEST(SparseMat_TEST, COO_MatStruct)
 {
     // Create a 4x4 sparse matrix

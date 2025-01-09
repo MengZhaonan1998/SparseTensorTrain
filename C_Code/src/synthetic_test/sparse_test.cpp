@@ -39,7 +39,7 @@ int main(int argc, char** argv)
     double cutoff = 1e-8;
     size_t maxdim = 5;
     size_t mindim = 1;
-    auto result = dSparse_PartialRRLDU_CPU(M_, cutoff, maxdim, mindim, isFullReturn);
+    //auto result = dSparse_PartialRRLDU_CPU(M_, cutoff, maxdim, mindim, isFullReturn);
 
 
 

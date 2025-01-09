@@ -34,5 +34,5 @@ std::vector<tblis::tensor<double>> TT_IDPRRLDU_dense(tblis::tensor<double> tenso
 
 // Sparse decompositions
 decompRes::SparsePrrlduRes<double>
-dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff, size_t const maxdim, size_t const mindim, bool const isFullReturn);
+dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff, double const spthres, size_t const maxdim, size_t const mindim, bool const isFullReturn);
 #endif // TENSOR_DECOMPOSITION_H
