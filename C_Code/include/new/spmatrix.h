@@ -41,7 +41,7 @@ struct COOMatrix_l2 {
     T* values;              // Values of non-zero elements
 
     // Constructor
-    COOMatrix_l2(size_t num_rows, size_t num_cols, size_t initial_capacity = 10) 
+    COOMatrix_l2(size_t num_rows, size_t num_cols, size_t initial_capacity = 100) 
         : rows(num_rows), cols(num_cols), capacity(initial_capacity), nnz_count(0) {
         row_indices = new size_t[capacity];
         col_indices = new size_t[capacity];
@@ -238,6 +238,23 @@ struct COOMatrix_l2 {
             values = nullptr;
         }
         nnz_count = 0;
+    }
+
+    COOMatrix_l2<T> subcol(const size_t* pivot_cols, size_t rank) {
+        COOMatrix_l2<T> result(rows, rank);
+        
+        // Select columns from pivot column array
+        for (size_t i = 0; i < nnz_count; ++i) {
+            size_t col_idx = col_indices[i];
+            for (size_t j = 0; j < rank; ++j) {
+                size_t pcol_idx = pivot_cols[j];
+                if (pcol_idx == col_idx) {
+                    result.add_element(row_indices[i], j, values[i]);
+                }
+            }    
+        }
+        
+        return result;
     }
 
     COOMatrix_l2<T> multiply(const COOMatrix_l2<T>& other) const {

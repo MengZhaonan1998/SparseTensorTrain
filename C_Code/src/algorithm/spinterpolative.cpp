@@ -59,13 +59,11 @@ void dCOOMatrix_l1_copyH2H(COOMatrix_l1<double>& hM_dest, const COOMatrix_l1<dou
 }
 
 decompRes::SparsePrrlduRes<double>
-dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff, double const spthres, 
-                        size_t const maxdim, size_t const mindim, bool const isFullReturn)
+dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff, 
+                        double const spthres, size_t const maxdim, bool const isFullReturn)
 {
     // Dimension argument check
     assertm(maxdim > 0, "maxdim must be positive");
-    assertm(mindim > 0, "mindim must be positive");
-    assertm(maxdim >= mindim, "maxdim must be larger than or equal to mindim");
 
     // Initialize maximum truncation dimension k and permutations
     size_t Nr = M_.rows;
@@ -86,7 +84,7 @@ dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff, dou
     // One thing to verify: how much sparsity we lose during this outer-product iteration?
     while (s < k) {
         // Sparse -> Dense criteria
-        std::cout << "Density = " << double(M.nnz_count) / Nr / Nc << std::endl;
+        //std::cout << "Density = " << double(M.nnz_count) / Nr / Nc << std::endl;
         double density = double(M.nnz_count) / Nr / Nc;
         if (density > spthres) {
             denseFlag = true;
@@ -115,7 +113,7 @@ dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff, dou
             break;
         }
 
-        // piv, swap rows and columns
+        // piv, swap rows and columns  // BENCHMARK COO VS CSR (Later)
         size_t piv_r = M.row_indices[max_idx];
         size_t piv_c = M.col_indices[max_idx];
         for (size_t i = 0; i < nnz; ++i) {
@@ -204,11 +202,12 @@ dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff, dou
 
     // Result set
     decompRes::SparsePrrlduRes<double> resultSet;
-    resultSet.rank = rank;
-    resultSet.output_rank = output_rank;
-    resultSet.inf_error = inf_error;
+    resultSet.rank = rank;  // Detected real rank
+    resultSet.output_rank = output_rank;   // Output (truncated) rank
+    resultSet.inf_error = inf_error;    // Inference error
     resultSet.isSparseRes = !denseFlag; // Dense or Sparse result
-
+    resultSet.isFullReturn = isFullReturn; // Full or non-full return
+    
     // Create inverse permutations
     resultSet.col_perm_inv = new size_t[Nc]{0};
     resultSet.row_perm_inv = new size_t[Nr]{0};
@@ -276,9 +275,106 @@ dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff, dou
     }
 }
 
-void dSparse_Interpolative()
-{
+decompRes::SparseInterpRes<double>
+dSparse_Interpolative_CPU(COOMatrix_l2<double> const M, double const cutoff, 
+                        double const spthres, size_t const maxdim)
+{   
+    // Result set initialization
+    decompRes::SparseInterpRes<double> idResult;
 
-    return;
+    // Partial rank-revealing LDU 
+    // cutoff / spthres / maxdim are controlled by input arguments of interpolative function
+    // isFullReturn for prrldu function is set to TRUE by default so far
+    bool isFullReturn_prrldu = true;
+    auto prrlduResult = dSparse_PartialRRLDU_CPU(M, cutoff, spthres, maxdim, isFullReturn_prrldu);
+    
+    // Rank detection
+    idResult.rank = prrlduResult.rank;
+    idResult.output_rank = prrlduResult.output_rank;
+    
+    size_t output_rank = prrlduResult.output_rank;
+    size_t Nr = M.rows;
+    size_t Nc = M.cols;
+
+    // Get pivot columns (CPU part)
+    idResult.pivot_cols = new size_t[Nc];
+    for (size_t i = 0; i < Nc; ++i) {
+        size_t idx;
+        for (size_t j = 0; j < Nc; ++j) {
+            if (prrlduResult.col_perm_inv[j] == i) {
+                idx = j;
+                break;
+            }     
+        }
+        idResult.pivot_cols[i] = idx;
+    }
+
+    // Allocate memory for interpolative coefficients
+    idResult.interp_coeff = new double[output_rank * (Nc - output_rank)]{0.0};
+            
+    // Interpolation coefficients
+    if (prrlduResult.isSparseRes) {
+        // Sparse U -> Sparse interpolation
+        if (prrlduResult.isFullReturn) {
+            // TODO...    
+        } else {
+            // If the results are returned in economic mode, we need an another implementation
+            // TODO...
+        }
+    } else {
+        // Dense U -> Dense interpolation
+        if (prrlduResult.isFullReturn) {            
+            double* U11 = new double[output_rank * output_rank]{0.0};
+            double* b = new double[output_rank]{0.0};
+            
+            // Extract relevant submatrices
+            for (size_t i = 0; i < output_rank; ++i)
+                std::copy(prrlduResult.dense_U + i * Nc, prrlduResult.dense_U + i * Nc + output_rank, U11 + i * output_rank);
+
+            // Compute the interpolative coefficients through solving upper triangular systems
+            for (size_t i = output_rank; i < Nc; ++i) {
+                // Right hand side b (one column of the U)
+                for (size_t j = 0; j < output_rank; ++j)
+                    b[j] = prrlduResult.dense_U[j * Nc + i];
+
+                // Triangular solver (BLAS)        
+                cblas_dtrsv(CblasRowMajor, CblasUpper, CblasNoTrans, CblasNonUnit, output_rank, U11, output_rank, b, 1);
+
+                // Copy the solution to iU11 columns
+                for (size_t j = 0; j < output_rank; ++j) 
+                    idResult.interp_coeff[j * (Nc - output_rank) + (i - output_rank)] = b[j];                
+            }
+
+            // Memory release
+            delete[] b;
+            delete[] U11;
+        } else {
+            // If the results are returned in economic mode, we need an another implementation
+            // TODO...
+        }
+    }   
+
+    // Memory release
+    prrlduResult.freeSpLduRes();
+    return idResult;
+}
+
+COOMatrix_l2<double> dcoeffZRecon(double* coeffMatrix, size_t* pivot_col, size_t rank, size_t col)
+{
+    COOMatrix_l2<double> Z(rank, col);
+    
+    // Identity part
+    for (size_t i = 0; i < rank; ++i) {
+        Z.add_element(i, pivot_col[i], 1.0);
+    }   
+
+    // Coefficient part
+    for (size_t i = rank; i < col; ++i) {   
+        for (size_t r = 0; r < rank; ++r) {
+            Z.add_element(r, pivot_col[i], coeffMatrix[r * (col - rank) + (i - rank)]);
+        }
+    }
+
+    return Z;
 }
 

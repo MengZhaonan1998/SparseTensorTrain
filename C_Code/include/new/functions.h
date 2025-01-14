@@ -21,7 +21,8 @@ void dPivotedQR(int m, int n, double* A, double* Q, double* R, int* jpvt);
 void dPivotedQR_MGS(double* M, int Nr, int Nc, double* Q, double* R, int* P, int& rank);
 
 // Partial rank-revealing LDU decomposition
-decompRes::PrrlduRes<double> dPartialRRLDU(double* M_, size_t Nr, size_t Nc, double cutoff, size_t maxdim, size_t mindim);
+decompRes::PrrlduRes<double> 
+dPartialRRLDU(double* M_, size_t Nr, size_t Nc, double cutoff, size_t maxdim, size_t mindim);
 
 // Interpolative decomposition
 void dInterpolative_PivotedQR(double* A, int m, int n, int maxdim, double* C, double* Z, int& outdim);
@@ -34,5 +35,9 @@ std::vector<tblis::tensor<double>> TT_IDPRRLDU_dense(tblis::tensor<double> tenso
 
 // Sparse decompositions
 decompRes::SparsePrrlduRes<double>
-dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff, double const spthres, size_t const maxdim, size_t const mindim, bool const isFullReturn);
+dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff, double const spthres, size_t const maxdim, bool const isFullReturn);
+decompRes::SparseInterpRes<double>
+dSparse_Interpolative_CPU(COOMatrix_l2<double> const M_, double const cutoff, double const spthres, size_t const maxdim);
+COOMatrix_l2<double> dcoeffZRecon(double* coeffMatrix, size_t* pivot_col, size_t rank, size_t col);
+
 #endif // TENSOR_DECOMPOSITION_H

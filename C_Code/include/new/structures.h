@@ -28,15 +28,14 @@ namespace decompRes {
 
     template<class T>
     struct SparsePrrlduRes {
-        T* d = nullptr;
-        T* dense_L = nullptr;
-        T* dense_U = nullptr;
-        COOMatrix_l2<T>* sparse_L = nullptr;
-        COOMatrix_l2<T>* sparse_U = nullptr;
+        T* d = nullptr;   // Diagonal entries
+        T* dense_L = nullptr;  // Return data when fullReturn and not sparseRes
+        T* dense_U = nullptr;  // Return data when not sparseReturn 
+        COOMatrix_l2<T>* sparse_L = nullptr;  // Return data when fullReturn and sparseReturn
+        COOMatrix_l2<T>* sparse_U = nullptr;  // Return data when sparseReturn
 
         bool isSparseRes;
-        bool isAllReturn;
-        bool isFullLU;
+        bool isFullReturn;
         size_t rank;
         size_t output_rank;
         size_t* row_perm_inv = nullptr;
@@ -55,24 +54,21 @@ namespace decompRes {
         };
     };
 
-    struct SparsePrrlduOpts {
-        bool isAllReturn = true;
-        bool isFullLU = true;
-    };
-
     template<class T>
     struct SparseInterpRes {
-        T* C = nullptr;
-        T* Z = nullptr;
-        size_t* select_cols = nullptr;
-        size_t rank;
-        size_t output_rank;
-        bool isAllReturn;
+        T* C = nullptr;  // Return data when fullReturn
+        T* Z = nullptr;  // Return data when fullReturn
+        T* interp_coeff = nullptr;    // Return data when not fullReturn
+        size_t* pivot_cols = nullptr; // Pivoted columns 
+        size_t rank;  // Detected rank of matrix
+        size_t output_rank; // Output(Truncated) rank
+        bool isFullReturn;
 
         void freeSpInterpRes() {
             if (C != nullptr) delete[] C;
             if (Z != nullptr) delete[] Z;
-            if (select_cols != nullptr) delete[] select_cols;
+            if (interp_coeff != nullptr) delete[] interp_coeff;
+            if (pivot_cols != nullptr) delete[] pivot_cols;
         };
     };
 }
