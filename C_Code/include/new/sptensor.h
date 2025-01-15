@@ -5,6 +5,7 @@
 #include "core.h"
 #include "external.h"
 #include "structures.h"
+#include "spmatrix.h"
 
 // Helper for index sequence
 template<size_t... Is>
@@ -307,6 +308,38 @@ public:
             fullT.data()[idt] = values[i];
         }
         return fullT;
+    }
+
+    // Reshape the tensor into a 2d matrix
+    COOMatrix_l2<T> reshape2Mat(size_t mat_row, size_t mat_col) const {
+        size_t N = 1;              // Get the total size: n1 * n2 * ... * nd 
+        for (size_t i = 0; i < Order; ++i)
+            N *= dimensions[i];
+        if (mat_row * mat_col != N) {
+            throw std::runtime_error("Input size does not match with the tensor size!");
+        }
+
+        // Reshape
+        COOMatrix_l2<T> M(mat_row, mat_col, nnz_count);
+        M.nnz_count = nnz_count;
+        std::memcpy(M.values, values, nnz_count * sizeof(T));
+        size_t idt;
+        size_t ddt;
+        for (size_t i = 0; i < nnz_count; ++i) {
+            idt = 0;
+            for (size_t dim = 0; dim < Order; ++dim) {
+                ddt = 1;
+                for (size_t od = dim + 1; od < Order; ++od) {
+                    ddt *= dimensions[od];
+                }
+                idt += indices[dim][i] * ddt;
+            }
+            //fullT.data()[idt] = values[i];
+            M.row_indices[i] = idt / mat_col;
+            M.col_indices[i] = idt % mat_col;
+        }
+
+        return M;
     }
 
     // Simplified contraction function for single dimension

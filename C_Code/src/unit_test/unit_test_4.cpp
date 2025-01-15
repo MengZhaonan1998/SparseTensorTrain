@@ -34,7 +34,7 @@ TEST(SparseMat_TEST, COO_MatMultiply_2)
     B.generate_random(density, seed, -10.0, 10.0);
 
     COOMatrix_l2<double> C = A.multiply(B);
-    C.print();
+    //C.print();
 }
 
 TEST(SparseMat_TEST, COO_MatStruct)
@@ -72,6 +72,26 @@ TEST(SparseMat_TEST, COO_MatStruct)
     delete[] full;
 }
 
+TEST(SparseMat_TEST, COO_MatReshape)
+{
+    // Create a 4x4 sparse matrix
+    COOMatrix_l2<double> matrix(4, 5);
+
+    // Add some non-zero elements
+    matrix.add_element(0, 0, 1.0);
+    matrix.add_element(1, 1, 3.0);
+    matrix.add_element(2, 4, 5.0);
+    matrix.add_element(3, 2, 2.0);
+
+    matrix.reshape(2, 10);
+    
+    EXPECT_NEAR(1.0, matrix.get(0,0), 1E-10);
+    EXPECT_NEAR(3.0, matrix.get(0,6), 1E-10);
+    EXPECT_NEAR(5.0, matrix.get(1,4), 1E-10);
+    EXPECT_NEAR(2.0, matrix.get(1,7), 1E-10);
+}
+
+
 TEST(SparseTensor_TEST, COO_TensorStruct)
 {
 // Create tensors of different orders
@@ -95,9 +115,39 @@ TEST(SparseTensor_TEST, COO_TensorStruct)
     //tensor5d.print();
 }
 
+TEST(SparseTensor_TEST, COO_ReshapeMat)
+{
+    // Create tensors of different orders
+    COOTensor<double, 3> tensor3d(10, 3, 4, 5);       // 3rd order tensor
+    COOTensor<double, 5> tensor5d(10, 3, 2, 4, 3, 1); // 5th order tensor
+    tensor3d.add_element(1.0, 0, 0, 0);
+    tensor3d.add_element(2.0, 1, 1, 1);
+    tensor3d.add_element(3.0, 2, 3, 2);
+    tensor3d.add_element(4.0, 0, 2, 3);
+    tensor5d.add_element(1.0, 0, 0, 0, 0, 0);
+    tensor5d.add_element(2.0, 1, 1, 3, 1, 0);
+    tensor5d.add_element(3.0, 2, 1, 2, 0, 0);
+    tensor5d.add_element(4.0, 2, 0, 3, 2, 0);
+    tensor5d.add_element(5.0, 1, 1, 1, 0, 0);
+
+    auto Mat1 = tensor3d.reshape2Mat(12, 5);
+    auto Mat2 = tensor5d.reshape2Mat(6, 12);
+
+    EXPECT_NEAR(1.0, Mat1.get(0,0), 1E-10);
+    EXPECT_NEAR(2.0, Mat1.get(5,1), 1E-10);
+    EXPECT_NEAR(3.0, Mat1.get(11,2), 1E-10);
+    EXPECT_NEAR(4.0, Mat1.get(2,3), 1E-10);
+
+    EXPECT_NEAR(1.0, Mat2.get(0,0), 1E-10);
+    EXPECT_NEAR(2.0, Mat2.get(3,10), 1E-10);
+    EXPECT_NEAR(3.0, Mat2.get(5,6), 1E-10);
+    EXPECT_NEAR(4.0, Mat2.get(4,11), 1E-10);
+    EXPECT_NEAR(5.0, Mat2.get(3,3), 1E-10);
+}
+
 TEST(SparseTensor_TEST, COO_Sparse2Dense)
 {
-// Create tensors of different orders
+    // Create tensors of different orders
     COOTensor<double, 3> tensor3d(10, 3, 4, 5);       // 3rd order tensor
     COOTensor<double, 5> tensor5d(10, 3, 2, 4, 3, 1); // 5th order tensor
    
@@ -386,7 +436,7 @@ TEST(SparseTensor_TEST, COO_RandomSparseSynTensor1)
     G3.generate_random(0.3, Distribution::UNIFORM, DistributionParams::uniform(0.0, 10.0), 300);
 
     auto T = SparseTTtoTensor<double>(G1, G2, G3);
-    std::cout << "T:\n";
+    //std::cout << "T:\n";
     //T.print();
 
     COOTensor<double, 3> noise(60, 3, 4, 5);

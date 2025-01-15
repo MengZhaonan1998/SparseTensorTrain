@@ -173,6 +173,21 @@ struct COOMatrix_l2 {
         return full;
     }
 
+    // In-place reshape
+    void reshape(size_t new_row, size_t new_col) {
+        if (new_row * new_col != rows * cols) {
+            throw std::runtime_error("New shape does not match with the original dimension!");
+        }
+        // Reshape
+        size_t idx;
+        for (size_t i = 0; i < nnz_count; ++i) {
+            idx = row_indices[i] * cols + col_indices[i];
+            row_indices[i] = idx / new_col;
+            col_indices[i] = idx % new_col;
+        }
+        return;    
+    }
+
     // Get number of non-zero elements
     size_t nnz() const {
         return nnz_count;
