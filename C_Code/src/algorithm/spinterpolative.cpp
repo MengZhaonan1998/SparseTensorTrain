@@ -151,7 +151,7 @@ dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff,
     double* M_full;
     if (denseFlag) {
         M_full = M.todense();
-        M.explicit_destroy();
+        M.explicit_destroy();   // NOTE HERE!
         while (s < k) {
             // Partial M, Mabs = abs(M[s:,s:])    
             double Mabs_max = 0.0;
@@ -217,10 +217,12 @@ dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff,
         resultSet.col_perm_inv[cps[j]] = j;
     delete[] rps;
     delete[] cps;
-
+    
+    // Whether dense LU factors or not 
     if (denseFlag) {   
+        // Whether return all things or not
         if (isFullReturn) {
-            // Memory allocation
+            // Memory allocation (full return -> return L, U, D)
             resultSet.d = new double[output_rank]{0.0};
             resultSet.dense_L = new double[Nr * output_rank]{0.0};
             resultSet.dense_U = new double[output_rank * Nc]{0.0};
@@ -252,25 +254,86 @@ dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff,
                 }
             }
         } else {
-            // TODO...
+            // Memory allocation (no full return -> return U, D)
+            resultSet.d = new double[output_rank]{0.0};
+            resultSet.dense_U = new double[output_rank * Nc]{0.0};
+            double* U = resultSet.dense_U;
+            double* d = resultSet.d;
+            
+            // Diagonal entries
+            for (size_t i = 0; i < output_rank; ++i)
+                U[i * Nc + i] = 1.0;
+
+            // Rank-revealing Guassian elimination
+            for (size_t ss = 0; ss < output_rank; ++ss) {
+                double P = M_full[ss * Nc + ss];
+                d[ss] = P; 
+
+                // Gaussian elimination
+                if (ss < Nc - 1) {
+                    // pivoted row
+                    for (size_t j = ss + 1; j < Nc; ++j)
+                        U[ss * Nc + j] = M_full[ss * Nc + j] / P;
+                }
+            }
         }
-        
-        //std::cout << "D\n";
-        //util::Print1DArray(resultSet.d, output_rank); 
-        //std::cout << "L\n";
-        //util::PrintMatWindow(resultSet.dense_L, Nr, output_rank, {0,Nr-1},{0,output_rank-1});
-        //std::cout << "U\n";
-        //util::PrintMatWindow(resultSet.dense_U, output_rank, Nc, {0,output_rank-1}, {0,Nc-1});
+        // Release M_full for dense case before returning the result set
         delete[] M_full;
         return resultSet;
     } else {
-        // Todo...
+        // Whether return all things or not
         if (isFullReturn) {
+            // Memory allocation (full return -> return L, U, D)
+            resultSet.d = new double[output_rank]{0.0};
+            resultSet.sparse_L.reconst(Nr, output_rank);
+            resultSet.sparse_U.reconst(output_rank, Nc);
 
+            // Diagonal entries
+            for (size_t i = 0; i < output_rank; ++i)
+                resultSet.sparse_L.add_element(i, i, 1.0);
+            for (size_t i = 0; i < output_rank; ++i)
+                resultSet.sparse_U.add_element(i, i, 1.0);
+
+            // Rank-revealing Guassian elimination
+            for (size_t ss = 0; ss < output_rank; ++ss) {
+                double P = M.get(ss, ss);
+                resultSet.d[ss] = P; 
+
+                // Gaussian elimination
+                if (ss < Nr - 1) {
+                    // pivoted col
+                    for (size_t i = ss + 1; i < Nr; ++i)
+                        resultSet.sparse_L.add_element(i, ss, M.get(i, ss) / P);                        
+                }
+                if (ss < Nc - 1) {
+                    // pivoted row
+                    for (size_t j = ss + 1; j < Nc; ++j)
+                        resultSet.sparse_U.add_element(ss, j, M.get(ss, j) / P);                        
+                }
+            }
         } else {
-            // TODO...
+            // Memory allocation (no full return -> return U, D)
+            resultSet.d = new double[output_rank]{0.0};
+            resultSet.sparse_U.reconst(output_rank, Nc);
+
+            // Diagonal entries
+            for (size_t i = 0; i < output_rank; ++i)
+                resultSet.sparse_U.add_element(i, i, 1.0);
+
+            // Rank-revealing Guassian elimination
+            for (size_t ss = 0; ss < output_rank; ++ss) {
+                double P = M.get(ss, ss);
+                resultSet.d[ss] = P; 
+
+                // Gaussian elimination
+                if (ss < Nc - 1) {
+                    // pivoted row
+                    for (size_t j = ss + 1; j < Nc; ++j)
+                        resultSet.sparse_U.add_element(ss, j, M.get(ss, j) / P);                        
+                }
+            }
         }
-        
+        // No need to release M_full for dense case before returning the result set
         return resultSet;
     }
 }

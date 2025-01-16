@@ -41,16 +41,11 @@ void TT_ID_sparse(const COOTensor<T, Order>& tensor, double const cutoff,
         if (verbose) {            
             auto C = W.subcol(idResult.pivot_cols, ri);
             auto Z = dcoeffZRecon(idResult.interp_coeff, idResult.pivot_cols, ri, col);            
-            // There are bugs in .multiply function
-            //auto recon = C.multiply(Z);
-            
-            std::cout << "C\n";
-            //util::PrintMatWindow(C.todense(), C.rows, C.cols, {0, C.rows-1}, {0, C.cols-1});
-            C.print();
-            std::cout << "Z\n";
-            //util::PrintMatWindow(Z.todense(), Z.rows, Z.cols, {0, Z.rows-1}, {0, Z.cols-1});
-            Z.print();
+            std::cout << "C:\n"; C.print();
+            std::cout << "Z:\n"; Z.print();
 
+            // There are bugs in .multiply function?
+            //auto recon = C.multiply(Z);
             T max_error = 0.0;            
             for (size_t i = 0; i < W.rows; ++i)
                 for (size_t j = 0; j < W.cols; ++j) {

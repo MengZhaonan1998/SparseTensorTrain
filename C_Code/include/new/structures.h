@@ -31,8 +31,8 @@ namespace decompRes {
         T* d = nullptr;   // Diagonal entries
         T* dense_L = nullptr;  // Return data when fullReturn and not sparseRes
         T* dense_U = nullptr;  // Return data when not sparseReturn 
-        COOMatrix_l2<T>* sparse_L = nullptr;  // Return data when fullReturn and sparseReturn
-        COOMatrix_l2<T>* sparse_U = nullptr;  // Return data when sparseReturn
+        COOMatrix_l2<T> sparse_L;  // Return data when fullReturn and sparseReturn
+        COOMatrix_l2<T> sparse_U;  // Return data when sparseReturn
 
         bool isSparseRes;
         bool isFullReturn;
@@ -47,10 +47,10 @@ namespace decompRes {
             if (d != nullptr) delete[] d;
             if (dense_L != nullptr) delete[] dense_L;
             if (dense_U != nullptr) delete[] dense_U;
-            if (sparse_L != nullptr) delete sparse_L;
-            if (sparse_U != nullptr) delete sparse_U;
             if (row_perm_inv != nullptr) delete[] row_perm_inv;
             if (col_perm_inv != nullptr) delete[] col_perm_inv;
+            sparse_L.~COOMatrix_l2<T>();
+            sparse_U.~COOMatrix_l2<T>();
         };
     };
 

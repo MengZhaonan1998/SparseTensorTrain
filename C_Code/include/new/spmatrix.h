@@ -41,6 +41,14 @@ struct COOMatrix_l2 {
     T* values;              // Values of non-zero elements
 
     // Constructor
+    COOMatrix_l2()
+        : rows(0), cols(0), capacity(0), nnz_count(0) {
+        row_indices = nullptr;
+        col_indices = nullptr;
+        values = nullptr;
+    }
+    
+    // Constructor
     COOMatrix_l2(size_t num_rows, size_t num_cols, size_t initial_capacity = 100) 
         : rows(num_rows), cols(num_cols), capacity(initial_capacity), nnz_count(0) {
         row_indices = new size_t[capacity];
@@ -114,6 +122,23 @@ struct COOMatrix_l2 {
         col_indices = new_col_indices;
         values = new_values;
         capacity = new_capacity;
+    }
+
+    // Re-constructor
+    void reconst(size_t num_rows, size_t num_cols, size_t initial_capacity = 100) {
+        rows = num_rows;
+        cols = num_cols;
+        capacity = initial_capacity;
+        nnz_count = 0;
+
+        if (row_indices != nullptr) delete[] row_indices;
+        if (col_indices != nullptr) delete[] col_indices;
+        if (values != nullptr) delete[] values;
+    
+        row_indices = new size_t[capacity];
+        col_indices = new size_t[capacity];
+        values = new T[capacity];
+        return;
     }
 
     // Add a non-zero element to the matrix
