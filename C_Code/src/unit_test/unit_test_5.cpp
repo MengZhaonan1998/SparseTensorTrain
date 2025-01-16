@@ -8,7 +8,7 @@ TEST(SparsePRRLDU, SparseMat4by5)
     // COO-format matrix
     size_t Nr = 4;
     size_t Nc = 5;
-    COOMatrix_l2<double> M_(4, 5, 20);
+    COOMatrix_l2<double> M_(Nr, Nc, 20);
     M_.add_element(0, 1, 2.0);
     M_.add_element(0, 3, -3.0);
     M_.add_element(0, 4, 1.2);
@@ -23,40 +23,68 @@ TEST(SparsePRRLDU, SparseMat4by5)
     // Sparse partial rank-revealing LDU decomposition
     bool isFullReturn = true;
     double cutoff = 1e-8;
-    double spthres = 0.45;
+    double spthres = 0.6;
     size_t maxdim = 5;
     auto lduResult = dSparse_PartialRRLDU_CPU(M_, cutoff, spthres, maxdim, isFullReturn);
-
-    // Reconstruction
-    // L * d * U = pivoted M
     size_t rank = lduResult.rank;
     size_t output_rank = lduResult.output_rank;
-    double* reconM = new double[Nr * Nc]{0.0};
-    double* L = lduResult.dense_L;
-    double* U = lduResult.dense_U;
-    double* d = lduResult.d;
     size_t* row_perm_inv = lduResult.row_perm_inv;
     size_t* col_perm_inv = lduResult.col_perm_inv;
-    for (int i = 0; i < Nr; ++i) {
-        for (int j = 0; j < output_rank; ++j) 
-            L[i * output_rank + j] = L[i * output_rank + j] * d[j];
-        for (int j = 0; j < Nc; ++j)
-            for (int k = 0; k < output_rank; ++k)
-                reconM[i * Nc + j] += L[i * output_rank + k] * U[k * Nc + j];
-    }
-    // Reverse permutation
-    double max_error = 0.0;
-    double* M_full = M_.todense();
-    for (int i = 0; i < Nr; ++i) 
-        for (int j = 0; j < Nc; ++j) {
-            double recover = reconM[row_perm_inv[i] * Nc + col_perm_inv[j]];
-            max_error = std::max(max_error, std::abs(recover - M_full[i * Nc + j]));
-        }
-    EXPECT_NEAR(max_error, 0.0, 1e-8);
+    double* d = lduResult.d;
 
-    delete[] M_full;
-    delete[] reconM;
-    lduResult.freeSpLduRes();
+    if (lduResult.isSparseRes) {
+        // Reconstruction
+        // L * d * U = pivoted M
+        COOMatrix_l2<double> reconM(Nr, Nc, 20);
+        for (int i = 0; i < Nr; ++i) {
+            for (int j = 0; j < output_rank; ++j) {
+                double val = lduResult.sparse_L.get(i, j) * d[j];
+                lduResult.sparse_L.update(i, j, val);
+            }
+            for (int j = 0; j < Nc; ++j)
+                for (int k = 0; k < output_rank; ++k) {
+                    double val = lduResult.sparse_L.get(i, k) * lduResult.sparse_U.get(k, j);
+                    reconM.addUpdate(i, j, val);                 
+                }
+        }
+
+        // Reverse permutation
+        double max_error = 0.0;
+        for (int i = 0; i < Nr; ++i) 
+            for (int j = 0; j < Nc; ++j) {
+                double recover = reconM.get(row_perm_inv[i], col_perm_inv[j]);
+                max_error = std::max(max_error, std::abs(recover - M_.get(i, j)));
+            }
+        EXPECT_NEAR(max_error, 0.0, 1e-10);
+    } else {
+        // Reconstruction
+        // L * d * U = pivoted M
+        double* reconM = new double[Nr * Nc]{0.0};
+        double* L = lduResult.dense_L;
+        double* U = lduResult.dense_U;
+        for (int i = 0; i < Nr; ++i) {
+            for (int j = 0; j < output_rank; ++j) 
+                L[i * output_rank + j] = L[i * output_rank + j] * d[j];
+            for (int j = 0; j < Nc; ++j)
+                for (int k = 0; k < output_rank; ++k)
+                    reconM[i * Nc + j] += L[i * output_rank + k] * U[k * Nc + j];
+        }
+        
+        // Reverse permutation
+        double max_error = 0.0;
+        double* M_full = M_.todense();
+        for (int i = 0; i < Nr; ++i) 
+            for (int j = 0; j < Nc; ++j) {
+                double recover = reconM[row_perm_inv[i] * Nc + col_perm_inv[j]];
+                max_error = std::max(max_error, std::abs(recover - M_full[i * Nc + j]));
+            }
+        EXPECT_NEAR(max_error, 0.0, 1e-10);
+        
+        // Memory release
+        delete[] M_full;
+        delete[] reconM;
+        lduResult.freeSpLduRes();
+    }
 }
 
 TEST(SparsePRRLDU, SparseMat6by6)
@@ -85,37 +113,65 @@ TEST(SparsePRRLDU, SparseMat6by6)
     double spthres = 0.36;
     size_t maxdim = 5;
     auto lduResult = dSparse_PartialRRLDU_CPU(M_, cutoff, spthres, maxdim, isFullReturn);
-
-    // Reconstruction
-    // L * d * U = pivoted M
     size_t rank = lduResult.rank;
     size_t output_rank = lduResult.output_rank;
-    double* reconM = new double[Nr * Nc]{0.0};
-    double* L = lduResult.dense_L;
-    double* U = lduResult.dense_U;
-    double* d = lduResult.d;
     size_t* row_perm_inv = lduResult.row_perm_inv;
     size_t* col_perm_inv = lduResult.col_perm_inv;
-    for (int i = 0; i < Nr; ++i) {
-        for (int j = 0; j < output_rank; ++j) 
-            L[i * output_rank + j] = L[i * output_rank + j] * d[j];
-        for (int j = 0; j < Nc; ++j)
-            for (int k = 0; k < output_rank; ++k)
-                reconM[i * Nc + j] += L[i * output_rank + k] * U[k * Nc + j];
-    }
-    // Reverse permutation
-    double max_error = 0.0;
-    double* M_full = M_.todense();
-    for (int i = 0; i < Nr; ++i) 
-        for (int j = 0; j < Nc; ++j) {
-            double recover = reconM[row_perm_inv[i] * Nc + col_perm_inv[j]];
-            max_error = std::max(max_error, std::abs(recover - M_full[i * Nc + j]));
-        }
-    EXPECT_NEAR(max_error, 0.0, 1e-8);
+    double* d = lduResult.d;
 
-    delete[] M_full;
-    delete[] reconM;
-    lduResult.freeSpLduRes();
+    if (lduResult.isSparseRes) {
+        // Reconstruction
+        // L * d * U = pivoted M
+        COOMatrix_l2<double> reconM(Nr, Nc, 20);
+        for (int i = 0; i < Nr; ++i) {
+            for (int j = 0; j < output_rank; ++j) {
+                double val = lduResult.sparse_L.get(i, j) * d[j];
+                lduResult.sparse_L.update(i, j, val);
+            }
+            for (int j = 0; j < Nc; ++j)
+                for (int k = 0; k < output_rank; ++k) {
+                    double val = lduResult.sparse_L.get(i, k) * lduResult.sparse_U.get(k, j);
+                    reconM.addUpdate(i, j, val);                 
+                }
+        }
+        
+        // Reverse permutation
+        double max_error = 0.0;
+        for (int i = 0; i < Nr; ++i) 
+            for (int j = 0; j < Nc; ++j) {
+                double recover = reconM.get(row_perm_inv[i], col_perm_inv[j]);
+                max_error = std::max(max_error, std::abs(recover - M_.get(i, j)));
+            }
+        EXPECT_NEAR(max_error, 0.0, 1e-10);
+    } else {
+        // Reconstruction
+        // L * d * U = pivoted M
+        double* reconM = new double[Nr * Nc]{0.0};
+        double* L = lduResult.dense_L;
+        double* U = lduResult.dense_U;
+        for (int i = 0; i < Nr; ++i) {
+            for (int j = 0; j < output_rank; ++j) 
+                L[i * output_rank + j] = L[i * output_rank + j] * d[j];
+            for (int j = 0; j < Nc; ++j)
+                for (int k = 0; k < output_rank; ++k)
+                    reconM[i * Nc + j] += L[i * output_rank + k] * U[k * Nc + j];
+        }
+        
+        // Reverse permutation
+        double max_error = 0.0;
+        double* M_full = M_.todense();
+        for (int i = 0; i < Nr; ++i) 
+            for (int j = 0; j < Nc; ++j) {
+                double recover = reconM[row_perm_inv[i] * Nc + col_perm_inv[j]];
+                max_error = std::max(max_error, std::abs(recover - M_full[i * Nc + j]));
+            }
+        EXPECT_NEAR(max_error, 0.0, 1e-10);
+        
+        // Memory release
+        delete[] M_full;
+        delete[] reconM;
+        lduResult.freeSpLduRes();
+    }
 }
 
 TEST(SparsePRRLDU, SparseMatRandom)
@@ -138,40 +194,68 @@ TEST(SparsePRRLDU, SparseMatRandom)
     // Sparse partial rank-revealing LDU decomposition
     bool isFullReturn = true;
     double cutoff = 1e-8;
-    double spthres = 0.40;
+    double spthres = 0.45;
     size_t maxdim = 8;
     auto lduResult = dSparse_PartialRRLDU_CPU(M_, cutoff, spthres, maxdim, isFullReturn);
-
-    // Reconstruction
-    // L * d * U = pivoted M
     size_t rank = lduResult.rank;
     size_t output_rank = lduResult.output_rank;
-    double* reconM = new double[Nr * Nc]{0.0};
-    double* L = lduResult.dense_L;
-    double* U = lduResult.dense_U;
-    double* d = lduResult.d;
     size_t* row_perm_inv = lduResult.row_perm_inv;
     size_t* col_perm_inv = lduResult.col_perm_inv;
-    for (int i = 0; i < Nr; ++i) {
-        for (int j = 0; j < output_rank; ++j) 
-            L[i * output_rank + j] = L[i * output_rank + j] * d[j];
-        for (int j = 0; j < Nc; ++j)
-            for (int k = 0; k < output_rank; ++k)
-                reconM[i * Nc + j] += L[i * output_rank + k] * U[k * Nc + j];
-    }
-    // Reverse permutation
-    double max_error = 0.0;
-    double* M_full = M_.todense();
-    for (int i = 0; i < Nr; ++i) 
-        for (int j = 0; j < Nc; ++j) {
-            double recover = reconM[row_perm_inv[i] * Nc + col_perm_inv[j]];
-            max_error = std::max(max_error, std::abs(recover - M_full[i * Nc + j]));
-        }
-    EXPECT_NEAR(max_error, 0.0, 1e-8);
+    double* d = lduResult.d;
 
-    delete[] M_full;
-    delete[] reconM;
-    lduResult.freeSpLduRes();
+    if (lduResult.isSparseRes) {
+        // Reconstruction
+        // L * d * U = pivoted M
+        COOMatrix_l2<double> reconM(Nr, Nc, 20);
+        for (int i = 0; i < Nr; ++i) {
+            for (int j = 0; j < output_rank; ++j) {
+                double val = lduResult.sparse_L.get(i, j) * d[j];
+                lduResult.sparse_L.update(i, j, val);
+            }
+            for (int j = 0; j < Nc; ++j)
+                for (int k = 0; k < output_rank; ++k) {
+                    double val = lduResult.sparse_L.get(i, k) * lduResult.sparse_U.get(k, j);
+                    reconM.addUpdate(i, j, val);                 
+                }
+        }
+        
+        // Reverse permutation
+        double max_error = 0.0;
+        for (int i = 0; i < Nr; ++i) 
+            for (int j = 0; j < Nc; ++j) {
+                double recover = reconM.get(row_perm_inv[i], col_perm_inv[j]);
+                max_error = std::max(max_error, std::abs(recover - M_.get(i, j)));
+            }
+        EXPECT_NEAR(max_error, 0.0, 1e-10);
+    } else {
+        // Reconstruction
+        // L * d * U = pivoted M
+        double* reconM = new double[Nr * Nc]{0.0};
+        double* L = lduResult.dense_L;
+        double* U = lduResult.dense_U;
+        for (int i = 0; i < Nr; ++i) {
+            for (int j = 0; j < output_rank; ++j) 
+                L[i * output_rank + j] = L[i * output_rank + j] * d[j];
+            for (int j = 0; j < Nc; ++j)
+                for (int k = 0; k < output_rank; ++k)
+                    reconM[i * Nc + j] += L[i * output_rank + k] * U[k * Nc + j];
+        }
+        
+        // Reverse permutation
+        double max_error = 0.0;
+        double* M_full = M_.todense();
+        for (int i = 0; i < Nr; ++i) 
+            for (int j = 0; j < Nc; ++j) {
+                double recover = reconM[row_perm_inv[i] * Nc + col_perm_inv[j]];
+                max_error = std::max(max_error, std::abs(recover - M_full[i * Nc + j]));
+            }
+        EXPECT_NEAR(max_error, 0.0, 1e-10);
+        
+        // Memory release
+        delete[] M_full;
+        delete[] reconM;
+        lduResult.freeSpLduRes();
+    }
 }
 
 TEST(SparseIDprrldu, SparseMat4by5)

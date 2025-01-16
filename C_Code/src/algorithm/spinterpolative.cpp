@@ -416,9 +416,13 @@ dSparse_Interpolative_CPU(COOMatrix_l2<double> const M, double const cutoff,
     if (prrlduResult.isSparseRes) {
         // Sparse U -> Sparse interpolation
         if (prrlduResult.isFullReturn) {
-            // TODO...    
+            //auto spU = prrlduResult.sparse_U.subcol()
+
+
+            // TODO...
+
         } else {
-            // If the results are returned in economic mode, we need an another implementation
+            // If the results are returned in economic mode, we need an another implementation?
             // TODO...
         }
     } else {
