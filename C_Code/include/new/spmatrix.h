@@ -165,7 +165,7 @@ struct COOMatrix_l2 {
     }
 
     // Full format
-    T* todense() {
+    T* todense() const {
         T* full = new T[rows * cols]{0};
         for (size_t i = 0; i < nnz_count; ++i) {
             full[row_indices[i] * cols + col_indices[i]] = values[i];
@@ -185,6 +185,8 @@ struct COOMatrix_l2 {
             row_indices[i] = idx / new_col;
             col_indices[i] = idx % new_col;
         }
+        rows = new_row;
+        cols = new_col;
         return;    
     }
 

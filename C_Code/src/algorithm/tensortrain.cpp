@@ -1,6 +1,7 @@
 #include "new/core.h"
 #include "new/dtensor.h"
 #include "new/functions.h"
+#include "new/util.h"
 
 std::vector<tblis::tensor<double>> TT_SVD_dense(tblis::tensor<double> tensor, int r_max, double eps)
 {    
@@ -149,6 +150,8 @@ std::vector<tblis::tensor<double>> TT_IDPRRLDU_dense(tblis::tensor<double> tenso
     
     // TT-ID-PRRLDU iteration. Iterate from d-1 to 1
     for (int i = dim-1; i>0; i--) {
+        std::cout << "TT ITERATION " << i << std::endl;
+
         int row = nbar / r / shape[i];       // Reshape row
         int col = r * shape[i];              // Reshape column
         
@@ -163,12 +166,16 @@ std::vector<tblis::tensor<double>> TT_IDPRRLDU_dense(tblis::tensor<double> tenso
 
         // Print the low rank approximation error
         if (verbose) {
+            std::cout << "C\n";
+            util::PrintMatWindow(C, row, ri, {0, row-1}, {0, ri-1});
+            std::cout << "Z\n";
+            util::PrintMatWindow(Z, ri, col, {0, ri-1}, {0, col-1});            
             double max_error = 0.0;
             for (int i = 0; i < row; ++i) {
                 for (int j = 0; j < col; ++j) {
                     double temp = 0.0;
                     for (int l = 0; l < out_r; ++l)
-                        temp += C[i * out_r + l] * Z[l * col + j];
+                        temp += C[i * out_r + l] * Z[l * col + j];                    
                     max_error = std::max(max_error, 
                     std::abs(temp - W.data()[i * col + j]));
                 }

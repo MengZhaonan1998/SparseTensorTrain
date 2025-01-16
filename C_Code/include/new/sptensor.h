@@ -186,6 +186,27 @@ public:
         }
     }
 
+    void update_element(T value, const std::array<size_t, Order>& idx_array) {
+        if (!check_bounds(idx_array, typename MakeIndexSequence<Order>::type{})) {
+            throw std::out_of_range("Index out of bounds");
+        }
+
+        for (size_t n = 0; n < nnz_count; ++n) {
+            bool flag = true;
+            for (size_t i = 0; i < Order; ++i) {
+                if (indices[i][n] != idx_array[i]) {
+                    flag = false;
+                }
+            }
+            if (flag) {
+                values[n] += value;
+                return;
+            }
+        }
+
+        add_element_array(value, idx_array);
+    }
+
     // Get the value at a specific position
     template<typename... Idx>
     T get(Idx... idx) const {
@@ -231,6 +252,15 @@ public:
     T* get_values() const {
         return values;
     }    
+
+    double get_density() const {
+        size_t N = 1;
+        for (size_t dim = 0; dim < Order; ++dim) {
+            N *= dimensions[dim];
+        }
+        double density = double(nnz_count) / double(N);
+        return density;
+    }
 
     // Sort elements lexicographically by indices
     void sort() {
@@ -400,8 +430,9 @@ public:
                                 out_indices[out_idx++] = other.get_indices()[k][j];
                             }
                         }
-                        
-                        result.add_element_array(prod, out_indices);
+
+                        //result.add_element_array(prod, out_indices);
+                        result.update_element(prod, out_indices);
                     }
                 }
             }
@@ -686,16 +717,16 @@ auto SparseTTtoTensor(const Tensors&... tensors) {
     return SparseTTtoTensor<T>(tensors...);
 }
 
-
-// Declare the template function
+// Declare the template function of TT-ID
 template<typename T, size_t Order>
-void TT_ID_sparse(const COOTensor<T, Order>& tensor, size_t r_max, T eps, bool verbose);
+void TT_ID_sparse(const COOTensor<T, Order>& tensor, double const cutoff, 
+                double const spthres, size_t const r_max, bool verbose);
 
 // Explicitly declare the specializations you'll use
-extern template void TT_ID_sparse<double, 3>(const COOTensor<double, 3>&, size_t, double, bool);
-extern template void TT_ID_sparse<double, 4>(const COOTensor<double, 4>&, size_t, double, bool);
-extern template void TT_ID_sparse<double, 5>(const COOTensor<double, 5>&, size_t, double, bool);
-extern template void TT_ID_sparse<double, 6>(const COOTensor<double, 6>&, size_t, double, bool);
+extern template void TT_ID_sparse<double, 3>(const COOTensor<double, 3>&, double, double, size_t, bool);
+extern template void TT_ID_sparse<double, 4>(const COOTensor<double, 4>&, double, double, size_t, bool);
+extern template void TT_ID_sparse<double, 5>(const COOTensor<double, 5>&, double, double, size_t, bool);
+extern template void TT_ID_sparse<double, 6>(const COOTensor<double, 6>&, double, double, size_t, bool);
 // Add other specializations as needed
 
 #endif

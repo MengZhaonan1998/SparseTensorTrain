@@ -84,7 +84,7 @@ dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff,
     // One thing to verify: how much sparsity we lose during this outer-product iteration?
     while (s < k) {
         // Sparse -> Dense criteria
-        //std::cout << "Density = " << double(M.nnz_count) / Nr / Nc << std::endl;
+        std::cout << "Density = " << double(M.nnz_count) / Nr / Nc << std::endl;
         double density = double(M.nnz_count) / Nr / Nc;
         if (density > spthres) {
             denseFlag = true;
@@ -279,15 +279,48 @@ decompRes::SparseInterpRes<double>
 dSparse_Interpolative_CPU(COOMatrix_l2<double> const M, double const cutoff, 
                         double const spthres, size_t const maxdim)
 {   
-    // Result set initialization
-    decompRes::SparseInterpRes<double> idResult;
-
     // Partial rank-revealing LDU 
     // cutoff / spthres / maxdim are controlled by input arguments of interpolative function
     // isFullReturn for prrldu function is set to TRUE by default so far
+    //std::cout << "Input M\n";
+    //util::PrintMatWindow(M.todense(), M.rows, M.cols, {0, M.rows-1}, {0, M.cols-1});
+
+    // Result set initialization & PRRLDU decomposition
+    decompRes::SparseInterpRes<double> idResult;
     bool isFullReturn_prrldu = true;
     auto prrlduResult = dSparse_PartialRRLDU_CPU(M, cutoff, spthres, maxdim, isFullReturn_prrldu);
     
+    // LU reconstruction verification
+    if (0) {
+        // L * d * U = pivoted M
+        size_t rank = prrlduResult.rank;
+        size_t output_rank = prrlduResult.output_rank;
+        double* reconM = new double[M.rows * M.cols]{0.0};
+        double* L = prrlduResult.dense_L;
+        double* U = prrlduResult.dense_U;
+        double* d = prrlduResult.d;
+        size_t* row_perm_inv = prrlduResult.row_perm_inv;
+        size_t* col_perm_inv = prrlduResult.col_perm_inv;
+        for (int i = 0; i < M.rows; ++i) {
+            for (int j = 0; j < output_rank; ++j) 
+                L[i * output_rank + j] = L[i * output_rank + j] * d[j];
+            for (int j = 0; j < M.cols; ++j)
+                for (int k = 0; k < output_rank; ++k)
+                    reconM[i * M.cols + j] += L[i * output_rank + k] * U[k * M.cols + j];
+        }
+        // Reverse permutation
+        double max_error = 0.0;
+        double* M_full = M.todense();
+        for (int i = 0; i < M.rows; ++i) 
+            for (int j = 0; j < M.cols; ++j) {
+                double recover = reconM[row_perm_inv[i] * M.cols + col_perm_inv[j]];
+                max_error = std::max(max_error, std::abs(recover - M_full[i * M.cols + j]));
+            }
+        std::cout << "MAXERROR LU: " << max_error << std::endl;
+        delete[] M_full;
+        delete[] reconM;
+    }
+
     // Rank detection
     idResult.rank = prrlduResult.rank;
     idResult.output_rank = prrlduResult.output_rank;
@@ -310,7 +343,11 @@ dSparse_Interpolative_CPU(COOMatrix_l2<double> const M, double const cutoff,
     }
 
     // Allocate memory for interpolative coefficients
-    idResult.interp_coeff = new double[output_rank * (Nc - output_rank)]{0.0};
+    if (output_rank * (Nc - output_rank) != 0) {
+        idResult.interp_coeff = new double[output_rank * (Nc - output_rank)]{0.0};
+    } else {
+        idResult.interp_coeff = nullptr;
+    }
             
     // Interpolation coefficients
     if (prrlduResult.isSparseRes) {
@@ -324,6 +361,7 @@ dSparse_Interpolative_CPU(COOMatrix_l2<double> const M, double const cutoff,
     } else {
         // Dense U -> Dense interpolation
         if (prrlduResult.isFullReturn) {            
+            //util::PrintMatWindow(prrlduResult.dense_U, output_rank, Nc, {0, output_rank-1}, {0, Nc-1});
             double* U11 = new double[output_rank * output_rank]{0.0};
             double* b = new double[output_rank]{0.0};
             
@@ -371,7 +409,10 @@ COOMatrix_l2<double> dcoeffZRecon(double* coeffMatrix, size_t* pivot_col, size_t
     // Coefficient part
     for (size_t i = rank; i < col; ++i) {   
         for (size_t r = 0; r < rank; ++r) {
-            Z.add_element(r, pivot_col[i], coeffMatrix[r * (col - rank) + (i - rank)]);
+            double ele = coeffMatrix[r * (col - rank) + (i - rank)];
+            if (std::abs(ele) > 1e-14) {
+                Z.add_element(r, pivot_col[i], ele);
+            }
         }
     }
 
