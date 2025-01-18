@@ -266,6 +266,7 @@ struct COOMatrix_l2 {
         }
     }
 
+    // Release the memory explicitly
     void explicit_destroy() {
         if (row_indices != nullptr) {
             delete[] row_indices;
@@ -280,6 +281,26 @@ struct COOMatrix_l2 {
             values = nullptr;
         }
         nnz_count = 0;
+    }
+
+    // Solve the upper triangular system (N*N)
+    // Assume the matrix is an upper triangular matrix) 
+    // Assume the diagonal entries are all 1
+    void utrsv(size_t N, T* b) {
+        if (N > rows || N > cols) 
+            throw std::runtime_error("N could not be larger than row/column!");        
+        
+        // A very naive implementation of sparse trsv
+        for (size_t i = 0; i < N; ++i) {
+            T temp = 0.0;
+            for (size_t j = 0; j < i; ++j) {
+                temp += get(N-1-i, N-1-j) * b[N-1-j];
+            }
+            //b[N-1-i] = (b[N-1-i] - temp) / get(N-1-i, N-1-i);
+            b[N-1-i] = b[N-1-i] - temp;
+        }
+
+        return;
     }
 
     COOMatrix_l2<T> subcol(const size_t* pivot_cols, size_t rank) {

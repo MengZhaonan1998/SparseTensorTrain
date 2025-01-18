@@ -49,8 +49,8 @@ namespace decompRes {
             if (dense_U != nullptr) delete[] dense_U;
             if (row_perm_inv != nullptr) delete[] row_perm_inv;
             if (col_perm_inv != nullptr) delete[] col_perm_inv;
-            sparse_L.~COOMatrix_l2<T>();
-            sparse_U.~COOMatrix_l2<T>();
+            //sparse_L.~COOMatrix_l2<T>();
+            //sparse_U.~COOMatrix_l2<T>();
         };
     };
 

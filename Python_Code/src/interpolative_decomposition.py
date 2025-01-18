@@ -1,6 +1,8 @@
 import numpy as np
 import time as tm
+import utils
 from scipy.linalg import solve, qr, eigvals, lu, svd, solve_triangular
+from scipy.sparse import random
 from typing import Tuple, Union, List
 
 '''
@@ -120,9 +122,11 @@ def prrldu(M_: np.ndarray, cutoff: float = 0.0,
         rps[s], rps[piv[0]] = rps[piv[0]], rps[s]
         cps[s], cps[piv[1]] = cps[piv[1]], cps[s]
         s += 1
+        #utils.MatrixSparseStat(M)
    
     # Commented on Dec.23/2024
     #M = M_[rps, :][:, cps]
+    #utils.MatrixSparseStat(M)
     
     # Initialize L, d, U
     L = np.eye(Nr, k)
@@ -414,6 +418,31 @@ def prrldu_test():
     print("Unit test ends!")
     return
 
+def prrldu_sparse_test():
+    print("Unit test of partial rank-revealing LDU factorization for a sparse matrix starts!")
+    # Random sparse test matrix
+    m = 500
+    n = 400
+    rng = np.random.default_rng()
+    M = random(m, n, density=0.1, random_state=rng)
+    M_full = M.toarray()
+    print("Sparsity statistics of M:")
+    utils.MatrixSparseStat(M_full)
+    
+    cutoff = 1e-8
+    maxdim = n
+    mindim = 1    
+    L, d, U, row_perm_inv, col_perm_inv, inf_error = prrldu(M_full, cutoff, maxdim, mindim)
+    
+    recon = L @ np.diag(d) @ U
+    recon_recover_r = recon[row_perm_inv,:]
+    recon_recover_rc = recon_recover_r[:,col_perm_inv]
+    max_err = np.max(np.abs(recon_recover_rc - M))    
+    print(f"prrldu: revealed rank = {L.shape[1]}, max error = {max_err}")    
+    print("Unit test ends!")
+    
+    return
+
 def pqr_test():
     print("Unit test of pivoted QR factorization starts!")
     # Random rank-deficient test matrix
@@ -421,22 +450,31 @@ def pqr_test():
     n = 40
     rank = 30
     min_val = 0
-    max_val = 100
+    max_val = 1000
     A = np.random.uniform(min_val, max_val, (m,rank))
     B = np.random.uniform(min_val, max_val, (rank,n))
     M = A @ B
+    
+    # Performance of prrldu
+    L, d, U, row_perm_inv, col_perm_inv, inf_error = prrldu(M, 1e-7, m, 1)
+    recon = L @ np.diag(d) @ U
+    recon_recover_r = recon[row_perm_inv,:]
+    recon_recover_rc = recon_recover_r[:,col_perm_inv]
+    max_err = np.max(np.abs(recon_recover_rc - M))    
+    print(f"prrldu: revealed rank = {L.shape[1]}, max error = {max_err}")
     
     # Performance of scipy.qr
     Q1, R1, P1 = qr(M, overwrite_a=False, mode='economic', pivoting=True)
     max_err = np.max(np.abs(Q1 @ R1 - M[:,P1]))
     print(f"scipy.qr: revealed rank = {Q1.shape[1]}, max error = {max_err}")    
+    
     # Performance of my pivoted qr
     Q, R, P, rank = PivotedQR(M)
     max_err = np.max(np.abs(Q @ R - M[:,P]))    
     print(f"my pivoted qr: revealed rank = {rank}, max error = {max_err}")    
     print("Unit test ends!")
+    
     return
-
 
 '''========== Unit tests =========='''
 
@@ -445,19 +483,43 @@ def pqr_test():
 #unit_test_3()
 #unit_test_4()
 #prrldu_test()
+#prrldu_sparse_test()
 #pqr_test()   # Problem: QR decomposition -> error accumulation? 
 
-'''
+
 M = np.array([[1.0, 2.0, 3.0, 4.4231, 5.0, -8.3 ,7.0, 0.2],
               [9.0, 10.0, -11.0, 12.0, 13.23, 14.0, 15.0, 16.0],
               [17.0, 18.232, 19.0, 20.0, 21.0, 22.432, 23.0, 24.0],
               [25.3, 26.0, 20.345, 28.0, -9.1, 30.0, 31.0, 32.0],
               [-33.211, 34.0, 3.5732, 36.0, 37.0, 38.0, 39.4323, 40.0],
               [39.33, 42.0, 43.0, -41.21, 45.0, 46.0, 47.167, 48.0]])
+
+M = np.array([[0.0, 2.0, 0.0, -3.0, 1.2, 9.2],
+              [0.0, 0.0, -0.5, 0.0, 4.0, 51.0],
+              [-1.5, 0.0, 0.0, 5.0, 0.0, 0.0],
+              [0.0,  0.0, -99, 0.0, 0.0, 0.0],
+              [0.0,  0.0, 0.6, 0.0, 0.0, 0.0],
+              [0.0,  0.0, 2.4, 0.0, 0.0, 0.0]])
+
+#M = np.array([[0.0, 2.0, 0.0, -3.0, 1.2],
+#              [0.0, 0.0, -0.5, 0.0, 4.0],
+#              [-1.5, 0.0, 0.0, 5.0, 0.0],
+#              [0.0,  -9.9, 0.2, 0.0, 0.0]])
+
+M = np.random.uniform(0, 10, (5,5))
+
 cutoff = 1e-8
 maxdim = 8
-C, Z, pivot_cols, inf_error = interpolative_prrldu(M, cutoff, maxdim)
 
+C, Z,  pivot_cols, inf_error = interpolative_prrldu(M, cutoff, maxdim)
+
+L, d, U, row_perm_inv, col_perm_inv, inf_error = prrldu(M, cutoff, maxdim)
+recon = L @ np.diag(d) @ U
+recon_recover_r = recon[row_perm_inv,:]
+recon_recover_rc = recon_recover_r[:,col_perm_inv]
+max_err = np.max(np.abs(recon_recover_rc - M))    
+
+'''
 m = 6
 n = 8
 rank = 5 
@@ -468,5 +530,6 @@ B = np.random.uniform(min_val, max_val, (rank,n))
 M = A @ B
 C, Z,  pivot_cols, inf_error = interpolative_prrldu(M, 1e-10, rank)
 print(M- C @ Z)
-pass
 '''
+
+pass

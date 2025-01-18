@@ -80,6 +80,15 @@
         "variant": "cpp",
         "format": "cpp",
         "stdfloat": "cpp",
-        "__nullptr": "cpp"
+        "__nullptr": "cpp",
+        "*.ipp": "cpp",
+        "__locale": "cpp",
+        "__functional_base": "cpp",
+        "locale": "cpp",
+        "__config": "cpp",
+        "__functional_03": "cpp",
+        "__hash_table": "cpp",
+        "__tree": "cpp",
+        "__tuple": "cpp"
     }
 }

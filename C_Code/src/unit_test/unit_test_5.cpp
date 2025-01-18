@@ -277,7 +277,7 @@ TEST(SparseIDprrldu, SparseMat4by5)
     // Sparse interpolative decomposition based on partial rank-revealing LDU decomposition
     bool isFullReturn = true;
     double cutoff = 1e-8;
-    double spthres = 0.45;
+    double spthres = 0.6;
     size_t maxdim = 5;
     auto idResult = dSparse_Interpolative_CPU(M_, cutoff, spthres, maxdim);
 
@@ -365,7 +365,7 @@ TEST(SparseIDprrldu, SparseMatRandom)
 
     // Sparse partial rank-revealing LDU decomposition
     double cutoff = 1e-8;
-    double spthres = 0.40;
+    double spthres = 0.5;
     size_t maxdim = 50;
     auto idResult = dSparse_Interpolative_CPU(M_, cutoff, spthres, maxdim);
 

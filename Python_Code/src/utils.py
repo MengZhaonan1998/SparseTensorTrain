@@ -10,7 +10,19 @@ def view_mat2d(matrix):
     plt.tight_layout()
     plt.show()
 
-# Show sparsity information of the input tensor array 
+# Show sparsity information of the input full (dense-format) matrix
+def MatrixSparseStat(matrix: np.array):
+    print("The sparsity statistics of the input matrix is as follows ...")
+    size = matrix.size
+    shape = matrix.shape
+    cntzero = np.count_nonzero(np.abs(matrix) < 1e-10)
+    cntnzero = size - cntzero
+    sparsity = cntzero / size
+    density = cntnzero / size
+    print(f"shape = {shape}, size = {size}, # zero = {cntzero}, sparsity = {sparsity}, # non-zero = {cntnzero}, density = {density}")
+    return
+
+# Show sparsity information of the input full (dense-format) tensor array 
 def TensorSparseStat(factors: list[np.array]):
     print("The sparsity statistics of the input tensor is as follows ...")
     for i in range(len(factors)):

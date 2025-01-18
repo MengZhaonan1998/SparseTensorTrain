@@ -37,12 +37,12 @@ void TT_ID_sparse(const COOTensor<T, Order>& tensor, double const cutoff,
         // There is no cutoff selection. Rank is revealed automatically by IDQR
         size_t ri = idResult.output_rank;
         
-        // Print the low rank approximation error
+        // Print the low rank approximation error and sparse information
         if (verbose) {            
             auto C = W.subcol(idResult.pivot_cols, ri);
             auto Z = dcoeffZRecon(idResult.interp_coeff, idResult.pivot_cols, ri, col);            
-            std::cout << "C:\n"; C.print();
-            std::cout << "Z:\n"; Z.print();
+            //std::cout << "C:\n"; C.print();
+            //std::cout << "Z:\n"; Z.print();
 
             // There are bugs in .multiply function?
             //auto recon = C.multiply(Z);
@@ -57,6 +57,7 @@ void TT_ID_sparse(const COOTensor<T, Order>& tensor, double const cutoff,
                     max_error = std::max(max_error, abs_error);
                 }
             std::cout << "Interpolative reconstruction error: " << max_error << std::endl;   
+            std::cout << "Factor Z nnz: " << Z.nnz_count << ", density: " << double(Z.nnz_count) / Z.cols / Z.rows << std::endl;
         }
 
         // Form a new tensor-train factor
