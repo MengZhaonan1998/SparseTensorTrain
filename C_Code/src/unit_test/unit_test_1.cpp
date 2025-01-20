@@ -150,6 +150,7 @@ TEST(ScratchTEST, QR_6by8)
     delete[] M;
     delete[] Q;
     delete[] R;
+    delete[] P;
 }
 
 TEST(ScratchTest, IDQR_6by8)
@@ -183,6 +184,9 @@ TEST(ScratchTest, IDQR_6by8)
         
     EXPECT_NEAR(max_error, 0.0, 1E-10);
     delete[] approx;
+    delete[] M;
+    delete[] C;
+    delete[] Z;
 }
 
 TEST(ScratchTest, IDQR_BadRandom)
@@ -210,6 +214,9 @@ TEST(ScratchTest, IDQR_BadRandom)
         
     EXPECT_NEAR(max_error, 0.0, 1E-10);
     delete[] approx;
+    delete[] M;
+    delete[] C;
+    delete[] Z;
 }
 
 TEST(ScratchTest, prrLDU_6by8)
@@ -305,6 +312,8 @@ TEST(ScratchTest, prrLDU_Random)
         }
     EXPECT_NEAR(max_error, 0.0, 1e-8);
 
+    delete[] A;
+    delete[] B;
     delete[] M;
     delete[] reconM;
     lduResult.freeLduRes();

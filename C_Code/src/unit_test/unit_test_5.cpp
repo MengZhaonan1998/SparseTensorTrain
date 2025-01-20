@@ -18,7 +18,6 @@ TEST(SparsePRRLDU, SparseMat4by5)
     M_.add_element(2, 3, 5.0);
     M_.add_element(3, 1, -9.9);
     M_.add_element(3, 2, 0.2);
-    //util::PrintMatWindow(M_.todense(), 4, 5, {0,3},{0,4});
     
     // Sparse partial rank-revealing LDU decomposition
     bool isFullReturn = true;
@@ -83,8 +82,8 @@ TEST(SparsePRRLDU, SparseMat4by5)
         // Memory release
         delete[] M_full;
         delete[] reconM;
-        lduResult.freeSpLduRes();
     }
+    lduResult.freeSpLduRes();
 }
 
 TEST(SparsePRRLDU, SparseMat6by6)
@@ -105,7 +104,6 @@ TEST(SparsePRRLDU, SparseMat6by6)
     M_.add_element(3, 2, -99);
     M_.add_element(4, 2, 0.6);
     M_.add_element(5, 2, 2.4);
-    //util::PrintMatWindow(M_.todense(), 4, 5, {0,3},{0,4});
     
     // Sparse partial rank-revealing LDU decomposition
     bool isFullReturn = true;
@@ -170,8 +168,8 @@ TEST(SparsePRRLDU, SparseMat6by6)
         // Memory release
         delete[] M_full;
         delete[] reconM;
-        lduResult.freeSpLduRes();
     }
+    lduResult.freeSpLduRes();
 }
 
 TEST(SparsePRRLDU, SparseMatRandom)
@@ -185,11 +183,9 @@ TEST(SparsePRRLDU, SparseMatRandom)
     A.generate_random(density, seed, -10.0, 10.0);
     seed = 76;
     B.generate_random(density, seed, -10.0, 10.0);
-    COOMatrix_l2<double> M_ = A.multiply(B);
-    
+    COOMatrix_l2<double> M_ = A.multiply(B);    
     size_t Nr = M_.rows;
     size_t Nc = M_.cols;
-    //util::PrintMatWindow(M_.todense(), Nr, Nc, {0,Nr-1},{0,Nc-1});
 
     // Sparse partial rank-revealing LDU decomposition
     bool isFullReturn = true;
@@ -254,8 +250,8 @@ TEST(SparsePRRLDU, SparseMatRandom)
         // Memory release
         delete[] M_full;
         delete[] reconM;
-        lduResult.freeSpLduRes();
     }
+    lduResult.freeSpLduRes();
 }
 
 TEST(SparseIDprrldu, SparseMat4by5)
@@ -389,3 +385,4 @@ TEST(SparseIDprrldu, SparseMatRandom)
     delete[] M_full;
     idResult.freeSpInterpRes();
 }
+
