@@ -1,8 +1,8 @@
-#include "new/spmatrix.h"
-#include "new/sptensor.h"
-#include "new/util.h"
-#include "new/functions.h"
-#include "new/structures.h"
+#include "spmatrix.h"
+#include "sptensor.h"
+#include "util.h"
+#include "functions.h"
+#include "structures.h"
 
 int main(int argc, char** argv) 
 { 
@@ -11,10 +11,10 @@ int main(int argc, char** argv)
     
     // Config settings
     int d = 4;
-    size_t shape[d] = {64, 64, 64, 64};
-    size_t rank[d-1] = {32, 128, 32};
+    size_t shape[d] = {50, 50, 50, 50};
+    size_t rank[d-1] = {30, 100, 30};
     size_t seed[d] = {100, 200, 300, 400};
-    double density[d] = {1e-2, 5e-3, 5e-3, 1e-2};
+    double density[d] = {1e-2, 1e-3, 1e-3, 1e-2};
     
     // Synthetic factor -> Synthetic tensor
     COOTensor<double, 2> G1(shape[0]* rank[0] * density[0], shape[0], rank[0]);    
@@ -37,7 +37,7 @@ int main(int argc, char** argv)
     std::cout << "Synthetic tensor T --" << T << "\n";
 
     // Tensor-train algorithm settings
-    size_t r_max = 128;
+    size_t r_max = 256;
     double eps = 1e-8;
     double spthres = 0.3;
     bool verbose = false;

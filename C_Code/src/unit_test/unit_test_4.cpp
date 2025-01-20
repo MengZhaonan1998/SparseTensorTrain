@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "new/spmatrix.h"
-#include "new/sptensor.h"
+#include "spmatrix.h"
+#include "sptensor.h"
 //#include "new/util.h"
 
 TEST(SparseMat_TEST, COO_MatMultiply_1)

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "new/spmatrix.h"
-#include "new/functions.h"
-#include "new/util.h"
+#include "spmatrix.h"
+#include "functions.h"
+#include "util.h"
 
 TEST(SparsePRRLDU, SparseMat4by5)
 {

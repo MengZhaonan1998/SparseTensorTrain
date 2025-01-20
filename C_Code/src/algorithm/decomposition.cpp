@@ -1,5 +1,5 @@
-#include "new/core.h"
-#include "new/functions.h"
+#include "core.h"
+#include "functions.h"
 
 void dQR_MGS(double* M, int Nr, int Nc, double* Q, double* R) {
     for (int j = 0; j < Nc; j++) {

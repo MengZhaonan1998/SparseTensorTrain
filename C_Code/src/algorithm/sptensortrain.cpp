@@ -1,8 +1,8 @@
-#include "new/spmatrix.h"
-#include "new/sptensor.h"
-#include "new/functions.h"
-#include "new/structures.h"
-#include "new/util.h"
+#include "spmatrix.h"
+#include "sptensor.h"
+#include "functions.h"
+#include "structures.h"
+#include "util.h"
 
 // Define the template function TT_ID_sparse
 template<typename T, size_t Order>

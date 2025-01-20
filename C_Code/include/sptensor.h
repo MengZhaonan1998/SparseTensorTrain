@@ -702,17 +702,25 @@ public:
             T val_this = values[i];
             T val_that;
             T temp;
+            bool flag = false;
             for (size_t j = 0; j < other.nnz_count; ++j) {
-                for (size_t d = 0; d < Order; ++d) {
+                for (size_t d = 0; d < Order; ++d) {                    
                     if (other.indices[d][j] != indices[d][i]) {
                         break;
                     }   
                     if (d == Order - 1) {
+                        flag = true;
                         val_that = other.values[j];
                         temp = std::abs(val_that - val_this);
                         diff += temp * temp;
                     }  
                 }
+                if (flag == true) {
+                    break;
+                }
+            }
+            if (flag == false) {
+                diff += val_this * val_this;        
             }
             denom += val_this * val_this;
         }
@@ -738,9 +746,7 @@ auto SparseTTtoTensor(const COOTensor<T, Order>& tensor) {
 template<typename T, size_t Order1, size_t Order2, typename... Rest>
 auto SparseTTtoTensor(const COOTensor<T, Order1>& first,
                       const COOTensor<T, Order2>& second,
-                      const Rest&... rest) {
-    util::Timer timer("SpTTtoTensor");
-    
+                      const Rest&... rest) {  
     // Contract first two tensors
     auto intermediate = first.contract(second, Order1 - 1, 0);
     

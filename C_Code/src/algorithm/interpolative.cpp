@@ -1,5 +1,5 @@
-#include "new/core.h"
-#include "new/functions.h"
+#include "core.h"
+#include "functions.h"
 
 // Interpolative decomposition by pivoted QR
 void dInterpolative_PivotedQR(double* M, int m, int n, int maxdim, 

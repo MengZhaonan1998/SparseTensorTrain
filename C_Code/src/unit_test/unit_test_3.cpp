@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "new/util.h"
-#include "new/dtensor.h"
-#include "new/functions.h"
+#include "util.h"
+#include "dtensor.h"
+#include "functions.h"
 
 TEST(PRRLDU_ID, DenseMat6by8)
 {

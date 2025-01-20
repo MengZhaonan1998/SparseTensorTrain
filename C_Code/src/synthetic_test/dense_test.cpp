@@ -1,6 +1,6 @@
-#include "new/core.h"
-#include "new/dtensor.h"
-#include "new/functions.h"
+#include "core.h"
+#include "dtensor.h"
+#include "functions.h"
 
 enum dense_tt_id {
     TTSVD = 1,
@@ -140,6 +140,6 @@ void toy_test()
 
 int main(int argc, char** argv) 
 {
-    SparseSyntheticT_DenseTest({50, 50, 50, 50}, {40, 150, 40}, {0.01, 0.01, 0.01, 0.01}, TTID_PRRLDU);
+    SparseSyntheticT_DenseTest({512, 512, 512, 512}, {400, 600, 400}, {0.01, 0.01, 0.01, 0.01}, TTID_PRRLDU);
     return 0; 
 }

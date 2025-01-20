@@ -1,7 +1,7 @@
-#include "new/core.h"
-#include "new/dtensor.h"
-#include "new/functions.h"
-#include "new/util.h"
+#include "core.h"
+#include "dtensor.h"
+#include "functions.h"
+#include "util.h"
 
 std::vector<tblis::tensor<double>> TT_SVD_dense(tblis::tensor<double> tensor, int r_max, double eps)
 {    

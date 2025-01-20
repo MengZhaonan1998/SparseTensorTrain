@@ -1,62 +1,7 @@
-#include <cuda_runtime.h>
-#include "new/sptensor.h"
-#include "new/spmatrix.h"
-#include "new/util.h"
-#include "new/structures.h"
-
-void dCOOMatrix_l1_hMemFree(COOMatrix_l2<double> hM)
-{
-    
-    return;
-}
-
-void dCOOMatrix_l1_copyH2H(COOMatrix_l1<double>& hM_dest, const COOMatrix_l1<double>& hM_src)
-{
-    // Input validation
-    if (hM_src.row_indices == nullptr || 
-        hM_src.col_indices == nullptr || 
-        hM_src.values == nullptr) {
-        throw std::invalid_argument("Source matrix contains null pointers");
-    }
-
-    // Clean up any existing memory in destination
-    delete[] hM_dest.row_indices;
-    delete[] hM_dest.col_indices;
-    delete[] hM_dest.values;
-
-    // Copy matrix properties
-    hM_dest.rows = hM_src.rows;
-    hM_dest.cols = hM_src.cols;
-    hM_dest.nnz = hM_src.nnz;
-
-    // Allocate memory and copy data only if nnz > 0
-    if (hM_src.nnz > 0) {
-        try {
-            hM_dest.row_indices = new size_t[hM_src.nnz];
-            hM_dest.col_indices = new size_t[hM_src.nnz];
-            hM_dest.values = new double[hM_src.nnz];
-            std::memcpy(hM_dest.row_indices, hM_src.row_indices, hM_src.nnz * sizeof(size_t));
-            std::memcpy(hM_dest.col_indices, hM_src.col_indices, hM_src.nnz * sizeof(size_t));
-            std::memcpy(hM_dest.values, hM_src.values, hM_src.nnz * sizeof(double));
-        } catch (const std::bad_alloc& e) {
-            // Clean up if allocation fails
-            delete[] hM_dest.row_indices;
-            delete[] hM_dest.col_indices;
-            delete[] hM_dest.values;
-            hM_dest.row_indices = nullptr;
-            hM_dest.col_indices = nullptr;
-            hM_dest.values = nullptr;
-            throw std::runtime_error("Memory allocation failed in matrix copy");
-        }        
-    } else {
-        // Set pointers to nullptr if nnz = 0
-        hM_dest.row_indices = nullptr;
-        hM_dest.col_indices = nullptr;
-        hM_dest.values = nullptr;
-    }
-
-    return;
-}
+#include "sptensor.h"
+#include "spmatrix.h"
+#include "util.h"
+#include "structures.h"
 
 decompRes::SparsePrrlduRes<double>
 dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff, 
@@ -64,6 +9,8 @@ dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff,
 {
     // Dimension argument check
     assertm(maxdim > 0, "maxdim must be positive");
+    std::cout << "Sparse partial rank revealing LDU decomposition (double CPU) starts.\n";
+    util::Timer timer("PRRLDU");
 
     // Initialize maximum truncation dimension k and permutations
     size_t Nr = M_.rows;
@@ -82,9 +29,10 @@ dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff,
     // Sparse-style computation 
     // A question: Do we want to sort COO every time?
     // One thing to verify: how much sparsity we lose during this outer-product iteration?
+    std::cout << "PRRLDU - Outer-product iteration starts.\n";
     while (s < k) {
         // Sparse -> Dense criteria
-        //std::cout << "Density = " << double(M.nnz_count) / Nr / Nc << std::endl;
+        std::cout << "Matrix density = " << double(M.nnz_count) / Nr / Nc << std::endl;
         double density = double(M.nnz_count) / Nr / Nc;
         if (density > spthres) {
             denseFlag = true;
@@ -195,6 +143,7 @@ dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff,
             s += 1;
         } 
     }
+    std::cout << "PRRLDU - Outer-product iteration ends.\n";
 
     size_t rank = s;  // Detected matrix rank    
     size_t output_rank = std::min(maxdim, rank);
@@ -279,7 +228,6 @@ dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff,
         }
         // Release M_full for dense case before returning the result set
         delete[] M_full;
-        return resultSet;
     } else {
         // Whether return all things or not
         if (isFullReturn) {
@@ -334,8 +282,10 @@ dSparse_PartialRRLDU_CPU(COOMatrix_l2<double> const M_, double const cutoff,
             }
         }
         // No need to release M_full for dense case before returning the result set
-        return resultSet;
     }
+
+    std::cout << "Sparse partial rank revealing LDU decomposition (double CPU) ends.\n";
+    return resultSet;
 }
 
 decompRes::SparseInterpRes<double>
@@ -347,12 +297,15 @@ dSparse_Interpolative_CPU(COOMatrix_l2<double> const M, double const cutoff,
     // isFullReturn for prrldu function is set to TRUE by default so far
     //std::cout << "Input M\n";
     //util::PrintMatWindow(M.todense(), M.rows, M.cols, {0, M.rows-1}, {0, M.cols-1});
+    std::cout << "Sparse interpolative decomposition (double CPU) starts.\n";
+    util::Timer timer("Sparse ID");
 
     // Result set initialization & PRRLDU decomposition
     decompRes::SparseInterpRes<double> idResult;
-    bool isFullReturn_prrldu = true;
+    bool isFullReturn_prrldu = false;      
+
     auto prrlduResult = dSparse_PartialRRLDU_CPU(M, cutoff, spthres, maxdim, isFullReturn_prrldu);
-    
+
     // LU reconstruction verification
     if (0) {
         // L * d * U = pivoted M
@@ -437,6 +390,26 @@ dSparse_Interpolative_CPU(COOMatrix_l2<double> const M, double const cutoff,
         } else {
             // If the results are returned in economic mode, we need an another implementation?
             // TODO...
+            // The current implementation is same with the one with prrlduResult.isFullReturn == true
+            // To be modified later...
+            double* b = new double[output_rank]{0.0};
+
+            // Compute the interpolative coefficients through solving upper triangular systems
+            for (size_t i = output_rank; i < Nc; ++i) {
+                // Right hand side b (one column of the U)
+                for (size_t j = 0; j < output_rank; ++j)
+                    b[j] = prrlduResult.sparse_U.get(j, i);
+
+                // Triangular solver (naive sparse)
+                prrlduResult.sparse_U.utrsv(output_rank, b);
+
+                // Copy the solution to iU11 columns
+                for (size_t j = 0; j < output_rank; ++j) 
+                    idResult.interp_coeff[j * (Nc - output_rank) + (i - output_rank)] = b[j];                
+            }
+
+            // Memory release
+            delete[] b;
         }
     } else {
         // Dense U -> Dense interpolation
@@ -469,11 +442,39 @@ dSparse_Interpolative_CPU(COOMatrix_l2<double> const M, double const cutoff,
         } else {
             // If the results are returned in economic mode, we need an another implementation
             // TODO...
+            // The current implementation is same with the one with prrlduResult.isFullReturn == true
+            // To be modified later...
+            double* U11 = new double[output_rank * output_rank]{0.0};
+            double* b = new double[output_rank]{0.0};
+            
+            // Extract relevant submatrices
+            for (size_t i = 0; i < output_rank; ++i)
+                std::copy(prrlduResult.dense_U + i * Nc, prrlduResult.dense_U + i * Nc + output_rank, U11 + i * output_rank);
+
+            // Compute the interpolative coefficients through solving upper triangular systems
+            for (size_t i = output_rank; i < Nc; ++i) {
+                // Right hand side b (one column of the U)
+                for (size_t j = 0; j < output_rank; ++j)
+                    b[j] = prrlduResult.dense_U[j * Nc + i];
+
+                // Triangular solver (BLAS)        
+                cblas_dtrsv(CblasRowMajor, CblasUpper, CblasNoTrans, CblasNonUnit, output_rank, U11, output_rank, b, 1);
+
+                // Copy the solution to iU11 columns
+                for (size_t j = 0; j < output_rank; ++j) 
+                    idResult.interp_coeff[j * (Nc - output_rank) + (i - output_rank)] = b[j];                
+            }
+
+            // Memory release
+            delete[] b;
+            delete[] U11;
         }
     }   
 
     // Memory release
     prrlduResult.freeSpLduRes();
+
+    std::cout << "Sparse interpolative decomposition (double CPU) ends.\n";
     return idResult;
 }
 

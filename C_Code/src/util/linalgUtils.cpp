@@ -1,5 +1,5 @@
-#include "new/core.h"
-#include "new/functions.h"
+#include "core.h"
+#include "functions.h"
 
 // Column inner products by BLAS
 void blas_dcolumn_inner_products(const double* A, int m, int n, double* results) {
