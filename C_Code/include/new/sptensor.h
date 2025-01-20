@@ -6,6 +6,7 @@
 #include "external.h"
 #include "structures.h"
 #include "spmatrix.h"
+#include "util.h"
 
 // Helper for index sequence
 template<size_t... Is>
@@ -21,7 +22,7 @@ struct MakeIndexSequence<0, Is...> {
 
 template<typename T, size_t Order>
 class COOTensor {
-private:
+public:
     // Array to store dimensions
     std::array<size_t, Order> dimensions;
 
@@ -35,7 +36,6 @@ private:
     std::array<size_t*, Order> indices;  // Array of pointers to index arrays
     T* values;                           // Values of non-zero elements
 
-public:
     // Helper function to check if indices are within bounds
     template<size_t... Is>
     bool check_bounds(const std::array<size_t, Order>& idx, IndexSequence<Is...>) const {
@@ -58,6 +58,12 @@ public:
         size_t other_dim;  // Dimension from other tensor
         ContractionDims(size_t t, size_t o) : this_dim(t), other_dim(o) {}
     };
+
+    // Constructor with empty init
+    COOTensor()
+        : capacity(0), nnz_count(0) {
+            
+    }
 
     // Constructor with dimensions
     template<typename... Dims>
@@ -125,6 +131,22 @@ public:
             std::memcpy(values, other.values, nnz_count * sizeof(T));
         }
         return *this;
+    }
+
+    // Reset the tensor by changing index, value, ...
+    template<typename... Dims>
+    void reset(size_t initial_capacity, Dims... dims) {
+        capacity = initial_capacity;
+        nnz_count = 0;
+        
+        static_assert(sizeof...(dims) == Order, "Number of dimensions must match Order");
+        dimensions = {static_cast<size_t>(dims)...};
+    
+        // Allocate arrays for indices and values
+        for (size_t i = 0; i < Order; ++i) {
+            indices[i] = new size_t[capacity];
+        }
+        values = new T[capacity];
     }
 
     // Resize arrays when capacity is reached
@@ -412,7 +434,8 @@ public:
                 // Check if contracted indices match
                 if (indices[this_dim][i] == other.get_indices()[other_dim][j]) {
                     T prod = values[i] * other.get_values()[j];
-                    if (prod != T(0)) {
+                    //if (prod != T(0)) {
+                    if (std::abs(prod) > 1e-14) {
                         // Build output indices
                         std::array<size_t, ResultOrder> out_indices;
                         out_idx = 0;
@@ -432,6 +455,7 @@ public:
                         }
 
                         //result.add_element_array(prod, out_indices);
+
                         result.update_element(prod, out_indices);
                     }
                 }
@@ -653,6 +677,34 @@ public:
         *this = *this + other;
         return *this;
     }
+
+    double rel_diff(const COOTensor& other) {
+        // Check if dimensions match
+        if (dimensions != other.dimensions) {
+            throw std::invalid_argument("Tensor dimensions must match for difference comparison!");
+        }
+        double diff = 0.0;
+        double denom = 0.0;
+        for (size_t i = 0; i < nnz_count; ++i) {
+            T val_this = values[i];
+            T val_that;
+            T temp;
+            for (size_t j = 0; j < other.nnz_count; ++j) {
+                for (size_t d = 0; d < Order; ++d) {
+                    if (other.indices[d][j] != indices[d][i]) {
+                        break;
+                    }   
+                    if (d == Order - 1) {
+                        val_that = other.values[j];
+                        temp = std::abs(val_that - val_this);
+                        diff += temp * temp;
+                    }  
+                }
+            }
+            denom += val_this * val_this;
+        }
+        return std::sqrt(diff / denom);
+    }
 };
 
 // Contract function for tensor train contraction
@@ -717,16 +769,23 @@ auto SparseTTtoTensor(const Tensors&... tensors) {
     return SparseTTtoTensor<T>(tensors...);
 }
 
+// TT Result struct
+struct SparseTTRes {
+    COOTensor<double, 2> StartG;
+    COOTensor<double, 2> EndG;
+    std::vector<COOTensor<double, 3>> InterG;
+};
+
 // Declare the template function of TT-ID
 template<typename T, size_t Order>
-void TT_ID_sparse(const COOTensor<T, Order>& tensor, double const cutoff, 
+SparseTTRes TT_ID_sparse(const COOTensor<T, Order>& tensor, double const cutoff, 
                 double const spthres, size_t const r_max, bool verbose);
 
 // Explicitly declare the specializations you'll use
-extern template void TT_ID_sparse<double, 3>(const COOTensor<double, 3>&, double, double, size_t, bool);
-extern template void TT_ID_sparse<double, 4>(const COOTensor<double, 4>&, double, double, size_t, bool);
-extern template void TT_ID_sparse<double, 5>(const COOTensor<double, 5>&, double, double, size_t, bool);
-extern template void TT_ID_sparse<double, 6>(const COOTensor<double, 6>&, double, double, size_t, bool);
+extern template SparseTTRes TT_ID_sparse<double, 3>(const COOTensor<double, 3>&, double, double, size_t, bool);
+extern template SparseTTRes TT_ID_sparse<double, 4>(const COOTensor<double, 4>&, double, double, size_t, bool);
+extern template SparseTTRes TT_ID_sparse<double, 5>(const COOTensor<double, 5>&, double, double, size_t, bool);
+extern template SparseTTRes TT_ID_sparse<double, 6>(const COOTensor<double, 6>&, double, double, size_t, bool);
 // Add other specializations as needed
 
 #endif

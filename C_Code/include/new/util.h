@@ -51,6 +51,26 @@ void generateRandomArray(T* array, int size, T minValue, T maxValue) {
     return;
 }
 
+class Timer
+{
+public:
+
+  Timer(std::string label);
+  ~Timer();
+  static void summarize(std::ostream& os=std::cout);
+
+private:
+
+  std::string label_;
+  std::chrono::_V2::system_clock::time_point t_start_;
+  static std::map<std::string, double> times_;
+  static std::map<std::string, double> squared_times_;
+  static std::map<std::string, double> max_time_;
+  static std::map<std::string, double> min_time_;
+  static std::map<std::string, int> counts_;
+
+};
+
 /*
 // CUDA-error detection function
 #define CHECK_CUDA_ERROR(val) checkCuda((val), #val, __FILE__, __LINE__)
@@ -69,6 +89,7 @@ void checkLast(const char* const file, int const line)
 		fprintf(stderr, "CUDA Runtime Error at: %s: %s\n %s \n", file, line, cudaGetErrorString(err));
 }
 */
+
 }
 
 #endif
