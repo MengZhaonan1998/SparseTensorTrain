@@ -133,6 +133,19 @@ public:
         return *this;
     }
 
+    friend std::ostream& operator<<(std::ostream& os, const COOTensor& obj) {
+        os << "Tensor info: shape = (";
+        for (size_t i = 0; i < Order; ++i) {
+            os << obj.dimensions[i];
+            if (i < Order - 1) {
+                os << ",";
+            }
+        }
+        os << "), nnz = " << obj.nnz_count;
+        os << ", density = " <<  obj.get_density() << ".";
+        return os;
+    }
+
     // Reset the tensor by changing index, value, ...
     template<typename... Dims>
     void reset(size_t initial_capacity, Dims... dims) {
@@ -726,6 +739,8 @@ template<typename T, size_t Order1, size_t Order2, typename... Rest>
 auto SparseTTtoTensor(const COOTensor<T, Order1>& first,
                       const COOTensor<T, Order2>& second,
                       const Rest&... rest) {
+    util::Timer timer("SpTTtoTensor");
+    
     // Contract first two tensors
     auto intermediate = first.contract(second, Order1 - 1, 0);
     

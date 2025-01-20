@@ -4,67 +4,60 @@
 #include "new/functions.h"
 #include "new/structures.h"
 
-void test1()
-{
-    // Initialize the synthetic sparse tensor
-    util::Timer timer("test1");
-    COOTensor<double, 2> G1(100, 20, 10);    
-    COOTensor<double, 3> G2(100, 10, 25, 30);
-    COOTensor<double, 3> G3(100, 30, 50, 9);
-    COOTensor<double, 2> G4(100, 9, 11);
-    G1.generate_random(0.1, Distribution::UNIFORM, DistributionParams::uniform(0.0, 10.0), 100);
-    G2.generate_random(0.03, Distribution::UNIFORM, DistributionParams::uniform(0.0, 10.0), 200);
-    G3.generate_random(0.03, Distribution::UNIFORM, DistributionParams::uniform(0.0, 10.0), 300);
-    G4.generate_random(0.05, Distribution::UNIFORM, DistributionParams::uniform(0.0, 10.0), 400);
+int main(int argc, char** argv) 
+{ 
+    // Main process timer
+    {util::Timer timer("Main process");
+    
+    // Config settings
+    int d = 4;
+    size_t shape[d] = {64, 64, 64, 64};
+    size_t rank[d-1] = {32, 128, 32};
+    size_t seed[d] = {100, 200, 300, 400};
+    double density[d] = {1e-2, 5e-3, 5e-3, 1e-2};
+    
+    // Synthetic factor -> Synthetic tensor
+    COOTensor<double, 2> G1(shape[0]* rank[0] * density[0], shape[0], rank[0]);    
+    COOTensor<double, 3> G2(rank[0] * shape[1] * rank[1] * density[1], rank[0], shape[1], rank[1]);
+    COOTensor<double, 3> G3(rank[1] * shape[2] * rank[2] * density[2], rank[1], shape[2], rank[2]);
+    COOTensor<double, 2> G4(rank[2] * shape[3] * density[3], rank[2], shape[3]);
+    G1.generate_random(density[0], Distribution::UNIFORM, DistributionParams::uniform(0.0, 10.0), seed[0]);
+    G2.generate_random(density[1], Distribution::UNIFORM, DistributionParams::uniform(0.0, 10.0), seed[1]);
+    G3.generate_random(density[2], Distribution::UNIFORM, DistributionParams::uniform(0.0, 10.0), seed[2]);
+    G4.generate_random(density[3], Distribution::UNIFORM, DistributionParams::uniform(0.0, 10.0), seed[3]);
+    //COOTensor<double, 4> T(5000, shape[1], shape[2], shape[3]);    
     auto T = SparseTTtoTensor<double>(G1, G2, G3, G4);
-    
-    std::cout << "INPUT SETTINGS\n"; 
-    std::cout << "Input core G1 - density: " << G1.get_density() << "\n";
-    std::cout << "Input core G2 - density: " << G2.get_density() << "\n";
-    std::cout << "Input core G3 - density: " << G3.get_density() << "\n"; 
-    std::cout << "Input core G4 - density: " << G4.get_density() << "\n";
-    std::cout << "Synthetic tensor - nnz " << T.nnz() << ", density: " << T.get_density() << "\n";
-    
-    size_t r_max = 30;
+
+    // Input information display
+    std::cout << "INPUT SETTINGS:\n"; 
+    std::cout << "Input core G1 --" << G1 << "\n";
+    std::cout << "Input core G2 --" << G2 << "\n";
+    std::cout << "Input core G3 --" << G3 << "\n"; 
+    std::cout << "Input core G4 --" << G4 << "\n";
+    std::cout << "Synthetic tensor T --" << T << "\n";
+
+    // Tensor-train algorithm settings
+    size_t r_max = 128;
     double eps = 1e-8;
     double spthres = 0.3;
     bool verbose = false;
+
+    // Sparse TTID algorithm
+    std::cout << "SPARSE TT-ID:\n";
+    auto ttList = TT_ID_sparse(T, eps, spthres, r_max, verbose);
     
-    if (1) {
-        std::cout << "TT_ID_sparse\n";
-        auto ttList = TT_ID_sparse(T, eps, spthres, r_max, verbose);
+    // Output information display
+    std::cout << "OUTPUT INFO:\n"; 
+    std::cout << "Output core F1 --" << ttList.StartG << "\n";
+    std::cout << "Output core F2 --" << ttList.InterG[0] << "\n";
+    std::cout << "Output core F3 --" << ttList.InterG[1] << "\n"; 
+    std::cout << "Output core F4 --" << ttList.EndG << "\n";
+    auto reconT = SparseTTtoTensor<double>(ttList.StartG, ttList.InterG[0], ttList.InterG[1], ttList.EndG);
+    std::cout << "Reconstructed tensor -- " << reconT << "\n";
+    double err = T.rel_diff(reconT);
+    std::cout << "Relative reconstruction error = " << err << std::endl;
 
-        std::cout << "fac 1\n";
-        ttList.StartG.print();
-
-        std::cout << "fac 2\n";
-        ttList.InterG[0].print();
-
-        std::cout << "fac 3\n";
-        ttList.InterG[1].print();
-
-        std::cout << "fac 4\n";
-        ttList.EndG.print();
-
-        //auto reconT = SparseTTtoTensor<double>(ttList.StartG, ttList.InterG[0], ttList.InterG[1], ttList.EndG);
-        //reconT.print();
-
-        //double err = T.rel_diff(reconT);
-        //std::cout << "error: " << err << std::endl;
-        
-
-    } else {
-        std::cout << "TT_IDPRRLDU_dense\n";
-        auto T_full = T.to_dense();
-        auto ttList = TT_IDPRRLDU_dense(T_full, r_max, eps);
-    }
-
-    return;
-}
-
-int main(int argc, char** argv) 
-{ 
-    test1();
-    util::Timer::summarize();
+    // Timer summary
+    }util::Timer::summarize();
     return 0; 
 } 
